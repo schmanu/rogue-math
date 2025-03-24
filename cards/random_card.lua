@@ -2,8 +2,8 @@ local Card = require("cards/card")
 local RandomCard = setmetatable({}, {__index = Card})
 RandomCard.__index = RandomCard
 
-function RandomCard.new(x, y)
-    local self = setmetatable(Card.new("rand", x, y, "num_rand"), RandomCard)
+function RandomCard.new(id, x, y)
+    local self = setmetatable(Card.new(id, x, y, "num_rand", "number"), RandomCard)
     self.type = "number"  -- New type for special cards
     return self
 end

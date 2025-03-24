@@ -1,131 +1,59 @@
 local Calculator = {}
 Calculator.__index = Calculator
 
-function Calculator.new(x, y)
+function Calculator.new(x, y, game)
+    print("Creating calculator" ..#game.cardLibrary.cardIds)
     local self = setmetatable({}, Calculator)
+    self.game = game  -- Store reference to game object
     self.x = x
     self.y = y
     self.width = 300
     self.height = 400
     self.display = ""
-    self.target = 8
-    self.level = 1
-    self.gameState = "playing"  -- "playing", "success", "failure"
-    self.buttonSize = 40
-    self.expectedInputType = "number"  -- "number" or "operator"
-    self.buttons = {}
-    self.animationState = {
-        active = false,
-        currentStep = 0,
-        totalSteps = 30,
-        result = 0,
-        targetReached = false,
-    }
-    self.rewardState = {
-        active = false,
-        cards = {},
-        selectedCard = nil
-    }
-    
-    -- Available reward cards
-    self.rewardCards = {
-        {value = "÷", name = "Division"},
-        {value = "x", name = "Multiplication"},
-        {value = "rand", name = "Random"},
-        {value = "x2", name = "Double"},
-    }
-    
-    -- Initialize buttons
-    self:initializeButtons()
-    
-    -- Start first level
-    self:startNextLevel()
-    
-    return self
-end
-
-function Calculator:init(game)
-    self.game = game  -- Store reference to game object
-    self.x = 100
-    self.y = 100
-    self.width = 300
-    self.height = 400
-    self.display = ""
-    self.target = 8
-    self.level = 1
+    self.currentValue = 0
+    self.currentOperation = nil
+    self.operatorMode = nil
+    self.expectedInputType = "number"
     self.gameState = "playing"
+    self.level = 1
+    self.gameMode = nil
+    self.targetNumber = 0
     self.animationState = {
         active = false,
         currentStep = 0,
-        totalSteps = 30,
+        totalSteps = 60,
         result = 0,
-        targetReached = false,
+        targetReached = false
     }
-    
-    -- Reward system
     self.rewardState = {
         active = false,
         cards = {},
         selectedCard = nil
     }
+    self.rewardCards = {
+        game.cardLibrary.cardIds.op_div,
+        game.cardLibrary.cardIds.op_mul,
+        game.cardLibrary.cardIds.num_random,
+        game.cardLibrary.cardIds.op_sub,
+        game.cardLibrary.cardIds.mod_double,
+        game.cardLibrary.cardIds.mod_reverse,
+        game.cardLibrary.cardIds.op_exp,
+    }
     
-    -- Button dimensions and spacing
+    -- Initialize button dimensions
     self.buttonSize = 40
     self.buttonSpacing = 8
     self.buttons = {}
     
-    -- Create number buttons (1-9)
-    for i = 1, 9 do
-        local row = math.ceil(i/3) - 1
-        local col = (i-1) % 3
-        table.insert(self.buttons, {
-            value = tostring(i),
-            x = self.x + 20 + col * (self.buttonSize + self.buttonSpacing),
-            y = self.y + 150 + row * (self.buttonSize + self.buttonSpacing),
-            width = self.buttonSize,
-            height = self.buttonSize,
-            hovered = false
-        })
-    end
+    -- Initialize buttons
+    self:initializeButtons()
     
-    -- Create operator buttons
-    local operators = {"+", "-", "×", "÷"}
-    for i, op in ipairs(operators) do
-        table.insert(self.buttons, {
-            value = op,
-            x = self.x + 20 + (i-1) * (self.buttonSize + self.buttonSpacing),
-            y = self.y + 150 + 3 * (self.buttonSize + self.buttonSpacing),
-            width = self.buttonSize,
-            height = self.buttonSize,
-            hovered = false
-        })
-    end
-    
-    -- Add clear and equals buttons
-    table.insert(self.buttons, {
-        value = "C",
-        x = self.x + 20,
-        y = self.y + 150 + 4 * (self.buttonSize + self.buttonSpacing),
-        width = self.buttonSize,
-        height = self.buttonSize,
-        hovered = false
-    })
-    
-    table.insert(self.buttons, {
-        value = "=",
-        x = self.x + 20 + self.buttonSize + self.buttonSpacing,
-        y = self.y + 150 + 4 * (self.buttonSize + self.buttonSpacing),
-        width = self.buttonSize,
-        height = self.buttonSize,
-        hovered = false
-    })
-    
-    -- Create renderer
-    local CalculatorRenderer = require("calculator_renderer")
-    self.renderer = CalculatorRenderer.new(self)
+    -- Initialize first level without incrementing level number
+    self:initializeLevel()
     
     return self
 end
+
 
 function Calculator:update(dt)
     -- Update buttons
@@ -149,49 +77,40 @@ function Calculator:draw()
     love.graphics.setColor(0.2, 0.2, 0.2)
     love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
     
+    -- Draw calculator border
+    love.graphics.setColor(0.4, 0.4, 0.4)
+    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
+    
     -- Draw display
     love.graphics.setColor(0.1, 0.1, 0.1)
     love.graphics.rectangle("fill", self.x + 10, self.y + 10, self.width - 20, 60)
-    love.graphics.setColor(0.2, 0.8, 0.2)  -- Terminal green color
-    love.graphics.printf(self.display, self.x + 20, self.y + 20, self.width - 40, "right")
     
-    -- Draw target (moved outside display)
-    love.graphics.setColor(0.8, 0.8, 0.8)
-    love.graphics.printf("Target: " .. self.target, self.x + 20, self.y + 80, self.width - 40, "left")
+    -- Draw display text
+    love.graphics.setColor(0, 1, 0)
+    love.graphics.printf(self.display == "" and "0" or self.display, 
+                        self.x + 20, self.y + 20, self.width - 40, "right")
     
-    -- Draw level (moved outside display)
-    love.graphics.setColor(0.8, 0.8, 0.8)
-    love.graphics.printf("Level " .. self.level, self.x + 20, self.y + 100, self.width - 40, "left")
+    -- Draw target number and game mode
+    love.graphics.setColor(1, 1, 1)
+    local modeText = self.gameMode == "hit_target" and "Hit exactly:" or "Reach at least:"
+    love.graphics.printf(modeText .. " " .. self.targetNumber, 
+                        self.x + 10, self.y + 80, self.width - 20, "center")
     
-    -- Draw expected input type (moved outside display)
-    love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.printf("Expecting: " .. self.expectedInputType, self.x + 20, self.y + 120, self.width - 40, "left")
-    
-    -- Draw end of round text
-    if self.gameState == "levelComplete" then
-        love.graphics.setColor(0.2, 0.8, 0.2)  -- Green for success
-        love.graphics.printf("Level Complete! Score: " .. self.animationState.result, 
-            self.x + 20, self.y + 140, self.width - 40, "center")
-    elseif self.gameState == "gameOver" then
-        love.graphics.setColor(0.8, 0.2, 0.2)  -- Red for failure
-        love.graphics.printf("Game Over! Final Score: " .. self.animationState.result, 
-            self.x + 20, self.y + 140, self.width - 40, "center")
-    end
+    -- Draw level and score
+    love.graphics.printf("Level: " .. self.level, 
+                        self.x + 10, self.y + 100, self.width - 20, "center")
     
     -- Draw buttons
-    for _, button in ipairs(self.buttons) do
-        button:draw()
-    end
+    self:drawButtons()
     
     -- Draw reward cards if active
     if self.rewardState.active then
-        for _, card in ipairs(self.rewardState.cards) do
-            card:draw()
-        end
+        self:drawRewardCards()
     end
 end
 
 function Calculator:generateRewardCards()
+    print("Generating reward cards" .. #self.rewardCards)
     local available = {}
     for _, card in ipairs(self.rewardCards) do
         table.insert(available, card)
@@ -211,35 +130,9 @@ function Calculator:generateRewardCards()
     local startX = (love.graphics.getWidth() - (cardWidth * 3 + spacing * 2)) / 2
     
     for i = 1, 3 do
-        local card = available[i]
-        table.insert(self.rewardState.cards, {
-            value = card.value,
-            name = card.name,
-            x = startX + (i-1) * (cardWidth + spacing),
-            y = 200,
-            width = cardWidth,
-            height = cardHeight,
-            draw = function(self)
-                -- Draw card background
-                love.graphics.setColor(0.3, 0.3, 0.3)
-                love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-                
-                -- Draw card border
-                love.graphics.setColor(0.8, 0.8, 0.8)
-                love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-                
-                -- Draw card value
-                love.graphics.setColor(1, 1, 1)
-                love.graphics.printf(self.value, self.x, self.y + 20, self.width, "center")
-                
-                -- Draw card name
-                love.graphics.setColor(0.8, 0.8, 0.8)
-                love.graphics.printf(self.name, self.x, self.y + 60, self.width, "center")
-            end,
-            update = function(self, dt)
-                -- No update needed for now
-            end
-        })
+        local cardId = available[i]
+        local card = self.game.cardLibrary:createCard(cardId, startX + (i-1) * (cardWidth + spacing), 200)
+        table.insert(self.rewardState.cards, card)
     end
 end
 
@@ -257,7 +150,7 @@ function Calculator:addInput(value)
         else
             -- Calculate and show intermediary result
             local result = self:calculateResult(tonumber(value))
-            self.currentOperator = nil
+            self.currentOperation = nil
             self.display = tostring(result)
         end
 
@@ -271,27 +164,39 @@ function Calculator:clear()
 end
 
 function Calculator:evaluate()
-    if self.gameState == "playing" then
-        local currentNumber = "0"
-        
-        for i = 1, #self.display do
-            local char = self.display:sub(i,i)
-            if char:match("%d") then
-                currentNumber = currentNumber .. char
-            end
-        end
-        local result = tonumber(currentNumber)
-
-        print("End of turn: " .. result)
-
-        self.animationState = {
-            active = true,
-            currentStep = 0,
-            totalSteps = 30,
-            result = result,
-            targetReached = result >= self.target,
-        }
-        self:setExpectedInputType("number")
+    if self.display == "" then return end
+    
+    -- Calculate final result from display
+    local result = 0
+    local currentNumber = ""
+    local currentOperator = nil
+    
+    result = tonumber(self.display)
+    
+    -- Check if target is reached based on game mode
+    local targetReached = false
+    if self.gameMode == "hit_target" then
+        targetReached = result == self.targetNumber
+    else  -- reach_target mode
+        targetReached = result >= self.targetNumber
+    end
+    
+    -- Set up animation state
+    self.animationState = {
+        active = true,
+        currentStep = 0,
+        totalSteps = 60,
+        result = result,
+        targetReached = targetReached
+    }
+    
+    if targetReached then
+        -- Level complete
+        self.gameState = "levelComplete"
+        self:startRewardState()
+    else
+        -- Game over
+        self.gameState = "gameOver"
     end
 end
 
@@ -305,7 +210,6 @@ function Calculator:setOperatorMode(operation, symbol)
 
     self:setExpectedInputType("number")
 end
-
 
 function Calculator:calculateResult(value)
     -- Simple evaluation for now
@@ -337,13 +241,7 @@ function Calculator:updateAnimation()
         if self.animationState.currentStep >= self.animationState.totalSteps then
             self.animationState.active = false
             if self.animationState.targetReached then
-                self.level = self.level + 1
-                self.target = self.target * 2
-                self.gameState = "levelComplete"
-                self:generateRewardCards()
-                self.rewardState.active = true
-            else
-                self.gameState = "gameOver"
+                self:startRewardState()
             end
             self.display = ""
         end
@@ -358,15 +256,21 @@ function Calculator:endTurn()
 end
 
 function Calculator:startNextLevel()
-    self.gameState = "playing"
-    self.display = ""
+    -- Increment level and initialize new level
+    self.level = self.level + 1
+    self:initializeLevel()
 end
 
 function Calculator:reset()
     self.display = ""
-    self.target = 8
-    self.level = 1
+    self.currentValue = 0
+    self.currentOperation = nil
+    self.operatorMode = nil
+    self.expectedInputType = "number"
     self.gameState = "playing"
+    self.level = 1
+    self.gameMode = nil
+    self.targetNumber = 0
     self.animationState.active = false
 end
 
@@ -409,11 +313,29 @@ function Calculator:getExpectedInputType()
     return self.expectedInputType
 end
 
+function Calculator:calculateTargetNumber()
+    if self.gameMode == "hit_target" then
+        -- Mode 1: Random number between 1 and level * 10
+        return math.random(2, self.level * 7)
+    elseif self.gameMode == "reach_target" then
+        -- Mode 2: Fibonacci number
+        local fib = 5
+        local prev = 3
+        for i = 2, self.level do
+            local temp = fib
+            fib = fib + prev
+            prev = temp
+        end
+        return fib
+    end
+end
+
+function Calculator:startRewardState()
+    self.rewardState.active = true
+    self:generateRewardCards()
+end
 
 function Calculator:initializeButtons()
-    -- Button dimensions and spacing
-    self.buttonSpacing = 8
-    
     -- Create number buttons (1-9)
     for i = 1, 9 do
         local row = math.ceil(i/3) - 1
@@ -511,6 +433,34 @@ function Calculator:initializeButtons()
             -- No update needed for now
         end
     })
+end
+
+function Calculator:drawButtons()
+    -- Implementation of drawButtons function
+end
+
+function Calculator:drawRewardCards()
+    -- Implementation of drawRewardCards function
+    for _, card in ipairs(self.rewardState.cards) do
+        card:draw()
+    end
+end
+
+function Calculator:initializeLevel()
+    -- Randomly select game mode
+    self.gameMode = math.random() < 0.5 and "hit_target" or "reach_target"
+    
+    -- Calculate target number based on game mode
+    self.targetNumber = self:calculateTargetNumber()
+    
+    -- Reset calculator state
+    self.display = ""
+    self.currentValue = 0
+    self.currentOperation = nil
+    self.operatorMode = nil
+    self.expectedInputType = "number"
+    self.gameState = "playing"
+    self:setOperatorMode(nil, nil)
 end
 
 return Calculator 

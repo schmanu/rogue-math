@@ -1,8 +1,9 @@
 local Card = {}
 Card.__index = Card
 
-function Card.new(value, x, y, sprite)
+function Card.new(id, value, x, y, sprite, type)
     local self = setmetatable({}, Card)
+    self.id = id
     self.value = value
     self.x = x
     self.y = y
@@ -15,49 +16,8 @@ function Card.new(value, x, y, sprite)
     self.selected = false
     self.disabled = false
     self.sprite = sprite
-    
-    -- Determine card type
-    if value == "rand" or tonumber(value) then
-        self.type = "number"
-    else
-        self.type = "operator"
-    end
-    
+    self.type = type
     return self
-end
-
-function Card:draw()
-    -- Draw card shadow
-    love.graphics.setColor(0, 0, 0, 0.2)
-    love.graphics.rectangle("fill", self.x + 2, self.y + 2, self.width, self.height)
-    
-    -- Draw card background
-    if self.disabled then
-        love.graphics.setColor(0.5, 0.5, 0.5, 1.0)
-    elseif self.type == "number" then
-        love.graphics.setColor(0.7, 0.8, 1.0, 1.0)  -- Light blue for numbers
-    elseif self.type == "operator" then
-        love.graphics.setColor(1.0, 0.8, 0.8, 1.0)  -- Light red for operators
-    else
-        love.graphics.setColor(0.8, 0.7, 1.0, 1.0)  -- Light purple for special cards
-    end
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-    
-    -- Draw card border
-    if self.selected then
-        love.graphics.setColor(1.0, 0.8, 0.2, 1.0)  -- Golden border for selected cards
-    else
-        love.graphics.setColor(0.2, 0.2, 0.2, 1.0)
-    end
-    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-    
-    -- Draw card value
-    love.graphics.setColor(0.2, 0.2, 0.2, 1.0)
-    love.graphics.printf(self.value, self.x, self.y + 15, self.width, "center")
-    
-    -- Draw card type
-    local typeLabel = self.type == "number" and "NUM" or "OP"
-    love.graphics.printf(typeLabel, self.x, self.y + 40, self.width, "center")
 end
 
 function Card:update(dt)

@@ -2,8 +2,8 @@ local Card = require("cards/card")
 local DoubleCard = setmetatable({}, {__index = Card})
 DoubleCard.__index = DoubleCard
 
-function DoubleCard.new(x, y)
-    local self = setmetatable(Card.new("x2", x, y, "op_x2"), DoubleCard)
+function DoubleCard.new(id, x, y)
+    local self = setmetatable(Card.new(id, "x2", x, y, "mod_x2", "modifier"), DoubleCard)
     self.type = "operator"  -- New type for special cards
     return self
 end

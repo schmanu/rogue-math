@@ -2,15 +2,17 @@ local NumberCard = require("cards/number_card")
 local OperatorCard = require("cards/operator_card")
 local DoubleCard = require("cards/double_card")
 local RandomCard = require("cards/random_card")
+local ReverseCard = require("cards/reverse_card")
 local Calculator = require("calculator")
 local Card = require("cards/card")
 local Assets = require("assets")
+local CardLibrary = require("cards/card_library")
 
 local game = {
-
     drawPile = {},
     discardPile = {},
     hand = {},
+    cardLibrary = CardLibrary.new(),
     calculator = nil,
     draggedCard = nil,
     deck = {},
@@ -106,33 +108,19 @@ local game = {
     canDiscard = true
 }
 
-function game:createCard(value, x, y)
-    if (value == "rand") then 
-        return RandomCard.new(x, y)
-    elseif value == "x2" then
-        return DoubleCard.new(x, y)
-    elseif value:match("%d") then
-        return NumberCard.new(value, x, y)
-    elseif value == "+" or value == "-" or value == "x" or value == "÷" then
-        return OperatorCard.new(value, x, y)
-    end
-    error("Invalid card value: " .. tostring(value))
+function game:createCard(cardId, x, y)    
+    return self.cardLibrary:createCard(cardId, x, y)
 end
 
 function game:initializeDeck(seed)
-    -- Set the seed
-    self.seed = seed or os.time()
-    math.randomseed(self.seed)
-    
     -- Create draw pile with limited number of cards
     self.drawPile = {}
     self.discardPile = {}
-    local cardValues = {"1", "2", "3", "4", "5", "6", "7", "8", "9", "+", "+"}
     
     -- Create a limited number of cards (enough for 2-3 hands)
-    for i = 1, #cardValues do
-        local value = cardValues[i]
-        table.insert(self.drawPile, value)  -- Store just the value, not the card object
+    for i = 1, #self.cardLibrary.initialCardIds do
+        local cardId = self.cardLibrary.initialCardIds[i]
+        table.insert(self.drawPile, cardId)  -- Store just the cardId, not the card object
     end
     
     -- Shuffle draw pile
@@ -145,8 +133,8 @@ function game:initializeDeck(seed)
     self.hand = {}
     for i = 1, 5 do
         if #self.drawPile > 0 then
-            local value = table.remove(self.drawPile)
-            local card = self:createCard(value, 0, 0)  -- Position will be set by updateHandPosition
+            local cardId = table.remove(self.drawPile)
+            local card = self:createCard(cardId, 0, 0)  -- Position will be set by updateHandPosition
             table.insert(self.hand, card)
         end
     end
@@ -160,14 +148,24 @@ function game:updateHandPosition()
     local baseY = 500
     local cardSpacing = 65
     local maxRotation = 15  -- Maximum rotation in degrees
+    
+    -- Handle single card case
+    if #self.hand == 1 then
+        self.hand[1].x = centerX
+        self.hand[1].y = baseY
+        self.hand[1].rotation = 0
+        return
+    end
+    
+    -- Calculate hand width and spacing for multiple cards
     local handWidth = (#self.hand - 1) * cardSpacing
     
     for i, card in ipairs(self.hand) do
         -- Calculate position along a curve
         local t = (i - 1) / (#self.hand - 1)  -- 0 to 1
-        local curveOffset = -math.sin(t * math.pi) * 40  -- Negated to make middle cards higher
+        local curveOffset = math.sin(t * math.pi) * 20  -- Creates a slight curve
         local x = centerX - handWidth/2 + (i-1) * cardSpacing
-        local y = baseY + curveOffset
+        local y = baseY - curveOffset
         
         -- Calculate rotation (cards on edges are rotated more)
         local rotation = (t - 0.5) * 2 * maxRotation  -- -maxRotation to maxRotation
@@ -182,8 +180,8 @@ function game:drawNewCards(count)
     -- Draw new cards from draw pile
     for i = 1, count do
         if #self.drawPile > 0 then
-            local value = table.remove(self.drawPile)
-            local card = self:createCard(value, 0, 0)  -- Position will be set by updateHandPosition
+            local cardId = table.remove(self.drawPile)
+            local card = self:createCard(cardId, 0, 0)  -- Position will be set by updateHandPosition
             table.insert(self.hand, card)
         end
     end
@@ -214,9 +212,9 @@ function game:discardSelectedCards()
     local selectedCount = 0
     for i = #self.hand, 1, -1 do
         if self.hand[i]:isSelected() then
-            print("Removing card:", self.hand[i].value)
+            print("Removing card:", self.hand[i].id)
             -- Add card to discard pile before removing from hand
-            table.insert(self.discardPile, self.hand[i].value)
+            table.insert(self.discardPile, self.hand[i].id)
             table.remove(self.hand, i)
             selectedCount = selectedCount + 1
         end
@@ -241,10 +239,13 @@ function game:discardSelectedCards()
 end
 
 function love.load()
+    -- Set the seed
+    game.seed = os.time()
+    math.randomseed(game.seed)
+
     -- Initialize calculator
     local Calculator = require("calculator")
-    game.calculator = Calculator.new(100, 50)  -- Moved up from 100 to 50
-    game.calculator.game = game  -- Pass game reference to calculator
+    game.calculator = Calculator.new(100, 50, game)  -- Moved up from 100 to 50
     
     -- Set parent references for UI elements
     game.drawPileUI.parent = game
@@ -266,8 +267,10 @@ function love.load()
     game.cardSprites["op_plus"] = love.graphics.newImage("sprites/cards/op_plus.png")
     game.cardSprites["op_multiply"] = love.graphics.newImage("sprites/cards/op_multiply.png")
     game.cardSprites["op_divide"] = love.graphics.newImage("sprites/cards/op_divide.png")
-    game.cardSprites["op_x2"] = love.graphics.newImage("sprites/cards/op_x2.png")
+    game.cardSprites["mod_x2"] = love.graphics.newImage("sprites/cards/mod_x2.png")
     game.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
+    game.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
+    game.cardSprites["op_exp"] = love.graphics.newImage("sprites/cards/op_exp.png")
     
     -- Initialize shaders
     game.shaders = {}
@@ -326,7 +329,7 @@ function love.update(dt)
         if game.calculator.gameState == "playing" then
             -- Disable cards based on expected input type
             if game.calculator:getExpectedInputType() == "number" then
-                card:setDisabled(card.type == "operator")
+                card:setDisabled(card.type == "operator" or card.type == "modifier")
             else
                 card:setDisabled(card.type == "number")
             end
@@ -406,19 +409,22 @@ function love.mousepressed(x, y, button)
             if game.calculator:handleRewardClick(x, y) then
                 -- Add selected card to draw pile
                 if game.calculator.rewardState.selectedCard then
+                    print("Stats before reward selection: " .. #game.drawPile .. " " .. #game.discardPile .. " " .. #game.hand)
+
                     -- Add the new card to the draw pile
-                    table.insert(game.drawPile, game.calculator.rewardState.selectedCard.value)
+                    table.insert(game.drawPile, game.calculator.rewardState.selectedCard.id)
                     
                     -- Start next level and draw new hand
                     game.calculator.rewardState.active = false
                     game.calculator:startNextLevel()
+
                     
                     -- Combine draw, discard piles and hand
                     for _, card in ipairs(game.discardPile) do
                         table.insert(game.drawPile, card)
                     end
                     for _, card in ipairs(game.hand) do
-                        table.insert(game.drawPile, card.value)
+                        table.insert(game.drawPile, card.id)
                     end
                     game.discardPile = {}  -- Clear discard pile
                     
@@ -427,16 +433,22 @@ function love.mousepressed(x, y, button)
                         local j = math.random(i)
                         game.drawPile[i], game.drawPile[j] = game.drawPile[j], game.drawPile[i]
                     end
+
+
                     
                     -- Draw new hand
                     game.hand = {}
+                    print("Stats after combining piles and hand " .. #game.drawPile .. " " .. #game.discardPile .. " " .. #game.hand)
+
                     for i = 1, 5 do
                         if #game.drawPile > 0 then
-                            local value = table.remove(game.drawPile)
-                            local card = game:createCard(value, 130 + (i-1) * 65, 500)
+                            local cardId = table.remove(game.drawPile)
+                            print("Drawing card: " .. cardId)
+                            local card = game:createCard(cardId, 130 + (i-1) * 65, 500)
                             table.insert(game.hand, card)
                         end
                     end
+
 
                     game:updateHandPosition()
                 end
@@ -455,28 +467,6 @@ function love.mousepressed(x, y, button)
                 break
             end
         end
-    elseif button == 2 then  -- Right click
-        print("Right click detected")
-        -- Toggle card selection for discarding
-        if game.canDiscard then  -- Only allow selection if can still discard
-            print("Can discard is true")
-            for _, card in ipairs(game.hand) do
-                if card:containsPoint(x, y) then
-                    card:setSelected(not card:isSelected())
-                    -- Enable discard button if any cards are selected
-                    game.discardButton.enabled = false
-                    for _, c in ipairs(game.hand) do
-                        if c:isSelected() then
-                            game.discardButton.enabled = true
-                            break
-                        end
-                    end
-                    break
-                end
-            end
-        else
-            print("Cannot discard - already discarded this turn")
-        end
     end
 end
 
@@ -487,7 +477,7 @@ function love.mousereleased(x, y, button)
             -- Play the card
             if game.draggedCard:play(game.calculator) then
                 -- Add card to discard pile before removing from hand
-                table.insert(game.discardPile, game.draggedCard.value)
+                table.insert(game.discardPile, game.draggedCard.id)
                 -- Remove card from hand
                 game:removeCard(game.draggedCard)
             end
