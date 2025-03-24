@@ -269,6 +269,20 @@ function love.load()
     game.cardSprites["op_x2"] = love.graphics.newImage("sprites/cards/op_x2.png")
     game.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
     
+    -- Initialize shaders
+    game.shaders = {}
+    
+    -- Card border shader with glow effect
+    game.shaders.cardBorder = love.graphics.newShader[[
+        extern vec3 borderColor;
+        vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
+            vec4 texcolor = Texel(tex, texture_coords);
+            // Create a subtle glow effect
+            vec3 glowColor = borderColor * (0.5 + 0.1 * sin(texture_coords.x * 10.0));
+            return vec4(glowColor, 1) * texcolor;
+        }
+    ]]
+    
     -- Initialize discard button state
     game.canDiscard = true
     game.discardButton.enabled = true
@@ -527,13 +541,6 @@ function Card:draw()
         self.width = spriteWidth * 2
         self.height = spriteHeight * 2
         
-        -- Draw background
-        if self.hovered then
-            love.graphics.setColor(0.4, 0.4, 0.4)
-        else
-            love.graphics.setColor(0.3, 0.3, 0.3)
-        end
-        
         -- Save the current graphics state
         love.graphics.push()
         
@@ -542,24 +549,27 @@ function Card:draw()
         love.graphics.rotate(math.rad(self.rotation or 0))
         love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
         
-        -- Draw card background
-        love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
+        -- Set background shader
+        local bgColor = self.hovered and {0.4, 0.4, 0.4} or {0.3, 0.3, 0.3}
+        love.graphics.setShader(game.shaders.cardBorder)
         
-        -- Draw border
+        -- Set border shader
+        local borderColor
         if self.selected then
-            love.graphics.setColor(1, 0.8, 0)  -- Gold border for selected cards
+            borderColor = {1, 0.8, 0}  -- Gold border for selected cards
         elseif self.disabled then
-            love.graphics.setColor(0.5, 0.5, 0.5)  -- Gray border for disabled cards
+            borderColor = {0.4, 0.4, 0.4}  -- Gray border for disabled cards
         else
-            love.graphics.setColor(0.8, 0.8, 0.8)  -- White border for normal cards
+            borderColor = {1, 1, 1}  -- White border for normal cards
         end
-        love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-        
+
+        game.shaders.cardBorder:send("borderColor", borderColor)
         -- Draw sprite scaled up by 2
         love.graphics.setColor(1, 1, 1)
         love.graphics.draw(sprite, self.x, self.y, 0, 2, 2)
         
         -- Restore the graphics state
+        love.graphics.setShader()
         love.graphics.pop()
     end
 end
