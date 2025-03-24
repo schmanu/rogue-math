@@ -17,7 +17,7 @@ local game = {
     font = nil,
     seed = nil,
     drawPileUI = {
-        x = 50,
+        x = 50,  -- Keep left side position
         y = 500,  -- Same y as hand cards
         width = 60,
         height = 90,
@@ -40,7 +40,7 @@ local game = {
         end
     },
     discardPileUI = {
-        x = 500,  -- Moved from 450 to 500
+        x = 700,  -- Moved left to be between hand cards and buttons
         y = 500,  -- Same y as hand cards
         width = 60,
         height = 90,
@@ -63,8 +63,8 @@ local game = {
         end
     },
     endTurnButton = {
-        x = 650,  -- Moved from 600 to 650
-        y = 500,  -- Same y as cards
+        x = 800,  -- Align with discard pile
+        y = 450,  -- Move up above the cards
         width = 120,
         height = 48,
         hovered = false,
@@ -78,8 +78,8 @@ local game = {
         end
     },
     discardButton = {
-        x = 650,  -- Moved from 600 to 650
-        y = 560,  -- Just below end turn button
+        x = 800,  -- Align with discard pile
+        y = 510,  -- Move down below the cards
         width = 120,
         height = 48,
         hovered = false,
@@ -146,9 +146,35 @@ function game:initializeDeck(seed)
     for i = 1, 5 do
         if #self.drawPile > 0 then
             local value = table.remove(self.drawPile)
-            local card = self:createCard(value, 130 + (i-1) * 65, 500)  -- Reduced padding from 140 to 130 and spacing from 70 to 65
+            local card = self:createCard(value, 0, 0)  -- Position will be set by updateHandPosition
             table.insert(self.hand, card)
         end
+    end
+    
+    -- Update hand positions
+    self:updateHandPosition()
+end
+
+function game:updateHandPosition()
+    local centerX = love.graphics.getWidth() / 2 - 100
+    local baseY = 500
+    local cardSpacing = 65
+    local maxRotation = 15  -- Maximum rotation in degrees
+    local handWidth = (#self.hand - 1) * cardSpacing
+    
+    for i, card in ipairs(self.hand) do
+        -- Calculate position along a curve
+        local t = (i - 1) / (#self.hand - 1)  -- 0 to 1
+        local curveOffset = -math.sin(t * math.pi) * 40  -- Negated to make middle cards higher
+        local x = centerX - handWidth/2 + (i-1) * cardSpacing
+        local y = baseY + curveOffset
+        
+        -- Calculate rotation (cards on edges are rotated more)
+        local rotation = (t - 0.5) * 2 * maxRotation  -- -maxRotation to maxRotation
+        
+        card.x = x
+        card.y = y
+        card.rotation = rotation
     end
 end
 
@@ -157,23 +183,25 @@ function game:drawNewCards(count)
     for i = 1, count do
         if #self.drawPile > 0 then
             local value = table.remove(self.drawPile)
-            local card = self:createCard(value, 130 + (#self.hand) * 65, 500)  -- Reduced padding from 140 to 130 and spacing from 70 to 65
+            local card = self:createCard(value, 0, 0)  -- Position will be set by updateHandPosition
             table.insert(self.hand, card)
         end
     end
+    
+    -- Update hand positions
+    self:updateHandPosition()
 end
 
 function game:removeCard(card)
     for i, c in ipairs(self.hand) do
         if c == card then
             table.remove(self.hand, i)
-            -- Reposition remaining cards
-            for j = i, #self.hand do
-                self.hand[j].x = 130 + (j-1) * 65  -- Reduced padding from 140 to 130 and spacing from 70 to 65
-            end
             break
         end
     end
+    
+    -- Update hand positions
+    self:updateHandPosition()
 end
 
 function game:discardSelectedCards()
@@ -395,6 +423,8 @@ function love.mousepressed(x, y, button)
                             table.insert(game.hand, card)
                         end
                     end
+
+                    game:updateHandPosition()
                 end
             end
             return
@@ -461,6 +491,8 @@ function love.mousereleased(x, y, button)
         end
         game.draggedCard:stopDragging()
         game.draggedCard = nil
+        -- Update hand positions
+       game:updateHandPosition()
     end
 end
 
@@ -501,6 +533,16 @@ function Card:draw()
         else
             love.graphics.setColor(0.3, 0.3, 0.3)
         end
+        
+        -- Save the current graphics state
+        love.graphics.push()
+        
+        -- Move to card center, rotate, then move back
+        love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
+        love.graphics.rotate(math.rad(self.rotation or 0))
+        love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
+        
+        -- Draw card background
         love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
         
         -- Draw border
@@ -516,5 +558,8 @@ function Card:draw()
         -- Draw sprite scaled up by 2
         love.graphics.setColor(1, 1, 1)
         love.graphics.draw(sprite, self.x, self.y, 0, 2, 2)
+        
+        -- Restore the graphics state
+        love.graphics.pop()
     end
 end
