@@ -2,7 +2,6 @@ local Calculator = {}
 Calculator.__index = Calculator
 
 function Calculator.new(x, y, game)
-    print("Creating calculator" ..#game.cardLibrary.cardIds)
     local self = setmetatable({}, Calculator)
     self.game = game  -- Store reference to game object
     self.x = x
@@ -15,30 +14,12 @@ function Calculator.new(x, y, game)
     self.operatorMode = nil
     self.expectedInputType = "number"
     self.gameState = "playing"
-    self.level = 1
-    self.gameMode = nil
-    self.targetNumber = 0
     self.animationState = {
         active = false,
         currentStep = 0,
         totalSteps = 60,
         result = 0,
         targetReached = false
-    }
-    self.rewardState = {
-        active = false,
-        cards = {},
-        selectedCard = nil
-    }
-    self.rewardCards = {
-        game.cardLibrary.cardIds.op_div,
-        game.cardLibrary.cardIds.op_mul,
-        game.cardLibrary.cardIds.num_random,
-        game.cardLibrary.cardIds.op_sub,
-        game.cardLibrary.cardIds.mod_double,
-        game.cardLibrary.cardIds.mod_reverse,
-        game.cardLibrary.cardIds.op_exp,
-        game.cardLibrary.cardIds.mod_prime,
     }
     
     -- Initialize button dimensions
@@ -49,24 +30,13 @@ function Calculator.new(x, y, game)
     -- Initialize buttons
     self:initializeButtons()
     
-    -- Initialize first level without incrementing level number
-    self:initializeLevel()
-    
     return self
 end
-
 
 function Calculator:update(dt)
     -- Update buttons
     for _, button in ipairs(self.buttons) do
         button:update(dt)
-    end
-    
-    -- Update reward cards if active
-    if self.rewardState.active then
-        for _, card in ipairs(self.rewardState.cards) do
-            card:update(dt)
-        end
     end
     
     -- Update animation state
@@ -81,24 +51,24 @@ function Calculator:draw()
     
     -- Draw target number and game mode
     love.graphics.setColor(1, 1, 1)
-    local modeText = self.gameMode == "hit_target" and "Hit:" or "Reach:"
-    love.graphics.printf(modeText .. " " .. self.targetNumber, 
+    local modeText = self.game.gameMode == "hit_target" and "Hit:" or "Reach:"
+    love.graphics.printf(modeText .. " " .. self.game.targetNumber, 
                         32, 128, 316, "left")
     
-    -- Draw level and score
-    love.graphics.printf("Level: " .. self.level, 
+    -- Draw level
+    love.graphics.printf("Level: " .. self.game.level, 
                        32, 128 + 48, 316, "left")
     
     -- Draw reward cards if active
-    if self.rewardState.active then
-        self:drawRewardCards()
+    if self.game.rewardState.active then
+        self.game:drawRewardCards()
     end
 end
 
 function Calculator:generateRewardCards()
-    print("Generating reward cards" .. #self.rewardCards)
+    print("Generating reward cards" .. #self.game.rewardCards)
     local available = {}
-    for _, card in ipairs(self.rewardCards) do
+    for _, card in ipairs(self.game.rewardCards) do
         table.insert(available, card)
     end
     
@@ -109,7 +79,7 @@ function Calculator:generateRewardCards()
     end
     
     -- Take first 3 cards
-    self.rewardState.cards = {}
+    self.game.rewardState.cards = {}
     local cardWidth = 120
     local cardHeight = 180
     local spacing = 40
@@ -118,7 +88,7 @@ function Calculator:generateRewardCards()
     for i = 1, 3 do
         local cardId = available[i]
         local card = self.game.cardLibrary:createCard(cardId, startX + (i-1) * (cardWidth + spacing), 200)
-        table.insert(self.rewardState.cards, card)
+        table.insert(self.game.rewardState.cards, card)
     end
 end
 
@@ -161,10 +131,10 @@ function Calculator:evaluate()
     
     -- Check if target is reached based on game mode
     local targetReached = false
-    if self.gameMode == "hit_target" then
-        targetReached = result == self.targetNumber
+    if self.game.gameMode == "hit_target" then
+        targetReached = result == self.game.targetNumber
     else  -- reach_target mode
-        targetReached = result >= self.targetNumber
+        targetReached = result >= self.game.targetNumber
     end
     
     -- Set up animation state
@@ -179,7 +149,7 @@ function Calculator:evaluate()
     if targetReached then
         -- Level complete
         self.gameState = "levelComplete"
-        self:startRewardState()
+        self.game:startRewardState()
     else
         -- Game over
         self.gameState = "gameOver"
@@ -227,7 +197,7 @@ function Calculator:updateAnimation()
         if self.animationState.currentStep >= self.animationState.totalSteps then
             self.animationState.active = false
             if self.animationState.targetReached then
-                self:startRewardState()
+                self.game:startRewardState()
             end
             self.display = ""
         end
@@ -241,12 +211,6 @@ function Calculator:endTurn()
     self.game.canDiscard = true  -- Reset discard ability
 end
 
-function Calculator:startNextLevel()
-    -- Increment level and initialize new level
-    self.level = self.level + 1
-    self:initializeLevel()
-end
-
 function Calculator:reset()
     self.display = ""
     self.currentValue = 0
@@ -254,9 +218,6 @@ function Calculator:reset()
     self.operatorMode = nil
     self.expectedInputType = "number"
     self.gameState = "playing"
-    self.level = 1
-    self.gameMode = nil
-    self.targetNumber = 0
     self.animationState.active = false
 end
 
@@ -270,20 +231,20 @@ function Calculator:handleButtonClick(x, y)
 end
 
 function Calculator:handleRewardClick(x, y)
-    if not self.rewardState.active then return false end
+    if not self.game.rewardState.active then return false end
     
     local cardWidth = 120
     local cardHeight = 180
     local spacing = 40
     local startX = (love.graphics.getWidth() - (cardWidth * 3 + spacing * 2)) / 2
     
-    for i, card in ipairs(self.rewardState.cards) do
+    for i, card in ipairs(self.game.rewardState.cards) do
         local cardX = startX + (i-1) * (cardWidth + spacing)
         local cardY = 200
         
         if x >= cardX and x <= cardX + cardWidth and
            y >= cardY and y <= cardY + cardHeight then
-            self.rewardState.selectedCard = card
+            self.game.rewardState.selectedCard = card
             return true
         end
     end
@@ -297,28 +258,6 @@ end
 
 function Calculator:getExpectedInputType()
     return self.expectedInputType
-end
-
-function Calculator:calculateTargetNumber()
-    if self.gameMode == "hit_target" then
-        -- Mode 1: Random number between 1 and level * 10
-        return math.random(2, self.level * 7)
-    elseif self.gameMode == "reach_target" then
-        -- Mode 2: Fibonacci number
-        local fib = 5
-        local prev = 3
-        for i = 2, self.level do
-            local temp = fib
-            fib = fib + prev
-            prev = temp
-        end
-        return fib
-    end
-end
-
-function Calculator:startRewardState()
-    self.rewardState.active = true
-    self:generateRewardCards()
 end
 
 function Calculator:initializeButtons()
@@ -423,19 +362,13 @@ end
 
 function Calculator:drawRewardCards()
     -- Implementation of drawRewardCards function
-    for _, card in ipairs(self.rewardState.cards) do
+    for _, card in ipairs(self.game.rewardState.cards) do
         print("Drawing reward card " .. card.id)
         card:draw()
     end
 end
 
 function Calculator:initializeLevel()
-    -- Randomly select game mode
-    self.gameMode = math.random() < 0.5 and "hit_target" or "reach_target"
-    
-    -- Calculate target number based on game mode
-    self.targetNumber = self:calculateTargetNumber()
-    
     -- Reset calculator state
     self.display = ""
     self.currentValue = 0

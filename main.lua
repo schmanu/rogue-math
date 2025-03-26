@@ -6,7 +6,9 @@ local ReverseCard = require("cards/reverse_card")
 local Calculator = require("calculator")
 local Card = require("cards/card")
 local Assets = require("assets")
+local Shaders = require("shaders")
 local CardLibrary = require("cards/card_library")
+local Game = require("game")
 
 local game = {
     drawPile = {},
@@ -18,6 +20,7 @@ local game = {
     deck = {},
     font = nil,
     seed = nil,
+    game = nil,  -- Will be initialized in love.load
     drawPileUI = {
         x = 36,  -- Keep left side position
         y = 710,  -- Same y as hand cards
@@ -216,53 +219,24 @@ function love.load()
     game.seed = os.time()
     math.randomseed(game.seed)
 
+    -- Initialize game state
+    game.game = Game.new()
+    game.game.cardLibrary = game.cardLibrary  -- Pass card library reference
+    
     -- Initialize calculator
-    local Calculator = require("calculator")
-    game.calculator = Calculator.new(100, 50, game)  -- Moved up from 100 to 50
+    game.calculator = Calculator.new(100, 50, game.game)
     
     -- Set parent references for UI elements
-    game.drawPileUI.parent = game    
+    game.drawPileUI.parent = game
+    
     -- Initialize deck and hand
     game:initializeDeck()
+
+    game.game:initializeLevel()
     
     -- Load assets
     Assets.load()
-
-    
-    
-    game.backgroundSprite = love.graphics.newImage("sprites/background.png")
-    -- Load card sprites
-    game.cardSprites = {}
-
-    -- Load number sprites
-    for i = 0, 9 do
-        game.cardSprites["num_" .. i] = love.graphics.newImage("sprites/cards/num_" .. i .. ".png")
-    end
-    -- Load operator sprites
-    game.cardSprites["op_plus"] = love.graphics.newImage("sprites/cards/op_plus.png")
-    game.cardSprites["op_multiply"] = love.graphics.newImage("sprites/cards/op_multiply.png")
-    game.cardSprites["op_divide"] = love.graphics.newImage("sprites/cards/op_divide.png")
-    game.cardSprites["op_exp"] = love.graphics.newImage("sprites/cards/op_exp.png")
-    game.cardSprites["op_sub"] = love.graphics.newImage("sprites/cards/op_sub.png")
-    game.cardSprites["mod_x2"] = love.graphics.newImage("sprites/cards/mod_x2.png")
-    game.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
-    game.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
-    game.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")
-
-    
-    -- Initialize shaders
-    game.shaders = {}
-    
-    -- Card border shader with glow effect
-    game.shaders.cardBorder = love.graphics.newShader[[
-        extern vec3 borderColor;
-        vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
-            vec4 texcolor = Texel(tex, texture_coords);
-            // Create a subtle glow effect
-            vec3 glowColor = borderColor * (0.5 + 0.5 * max(0, sin(0.5 + texture_coords.y * 3.0)));
-            return vec4(glowColor, 1) * texcolor;
-        }
-    ]]
+    Shaders.load()
     
     -- Initialize discard button state
     game.canDiscard = true
@@ -322,7 +296,9 @@ function love.draw()
     -- Draw background
     love.graphics.setColor(1, 1, 1)
     love.graphics.setShader()
-    love.graphics.draw(game.backgroundSprite, 0, 0)
+    if Assets.backgroundSprite then
+        love.graphics.draw(Assets.backgroundSprite, 0, 0)
+    end
     
     -- Draw calculator
     game.calculator:draw()
@@ -363,7 +339,6 @@ function love.mousepressed(x, y, button)
             game.calculator:endTurn()
             game.canDiscard = true  -- Reset discard ability here instead
             game.discardButton.enabled = true
-            
             return
         end
         
@@ -376,24 +351,20 @@ function love.mousepressed(x, y, button)
             return
         end
         
-        -- Check if clicking calculator buttons
-        if game.calculator:handleButtonClick(x, y) then
-            return
-        end
-        
         -- Check if clicking reward cards
-        if game.calculator.rewardState.active then
+        if game.game.rewardState.active then
             if game.calculator:handleRewardClick(x, y) then
                 -- Add selected card to draw pile
-                if game.calculator.rewardState.selectedCard then
+                if game.game.rewardState.selectedCard then
                     print("Stats before reward selection: " .. #game.drawPile .. " " .. #game.discardPile .. " " .. #game.hand)
 
                     -- Add the new card to the draw pile
-                    table.insert(game.drawPile, game.calculator.rewardState.selectedCard.id)
+                    table.insert(game.drawPile, game.game.rewardState.selectedCard.id)
                     
                     -- Start next level and draw new hand
-                    game.calculator.rewardState.active = false
-                    game.calculator:startNextLevel()
+                    game.game.rewardState.active = false
+                    game.calculator:reset()
+                    game.game:startNextLevel()
 
                     
                     -- Combine draw, discard piles and hand
@@ -498,47 +469,4 @@ function love.keypressed(key)
     end
 end
 
-function Card:draw()
-    -- Draw card sprite
-    love.graphics.setColor(0, 0, 0)
-    local sprite = game.cardSprites[self.sprite]
-    if sprite then
-        local spriteWidth, spriteHeight = sprite:getDimensions()
-        local scale = 4
-        -- Update card dimensions to match sprite scaled up by 2
-        self.width = spriteWidth * scale
-        self.height = spriteHeight * scale
-        
-        -- Save the current graphics state
-        love.graphics.push()
-        
-        -- Move to card center, rotate, then move back
-        love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
-        love.graphics.rotate(math.rad(self.rotation or 0))
-        love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
-        
-        -- Set background shader
-        local bgColor = self.hovered and {0.4, 0.4, 0.4} or {0.3, 0.3, 0.3}
-        love.graphics.setShader(game.shaders.cardBorder)
-        
-        -- Set border shader
-        local borderColor
-        if self.selected then
-            borderColor = {1, 0.8, 0}  -- Gold border for selected cards
-        elseif self.disabled then
-            borderColor = {0.4, 0.4, 0.4}  -- Gray border for disabled cards
-        else
-            borderColor = {1, 1, 1}  -- White border for normal cards
-        end
 
-        game.shaders.cardBorder:send("borderColor", borderColor)
-        -- Draw sprite scaled up by 2
-        love.graphics.draw(sprite, self.x, self.y, 0, scale, scale)
-        
-        -- Restore the graphics state
-        love.graphics.setShader()
-        love.graphics.pop()
-    else 
-        print("Card sprite" .. self.sprite .. " not found")
-    end
-end

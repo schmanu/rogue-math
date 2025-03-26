@@ -43,8 +43,7 @@ function CardLibrary.new()
         self.cardIds.num_8, 
         self.cardIds.num_9, 
         self.cardIds.op_add, 
-        self.cardIds.op_add,
-        self.cardIds.mod_prime,
+        self.cardIds.op_sub,
     }
 
     return self
