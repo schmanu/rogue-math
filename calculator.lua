@@ -38,6 +38,7 @@ function Calculator.new(x, y, game)
         game.cardLibrary.cardIds.mod_double,
         game.cardLibrary.cardIds.mod_reverse,
         game.cardLibrary.cardIds.op_exp,
+        game.cardLibrary.cardIds.mod_prime,
     }
     
     -- Initialize button dimensions
@@ -73,35 +74,20 @@ function Calculator:update(dt)
 end
 
 function Calculator:draw()
-    -- Draw calculator background
-    love.graphics.setColor(0.2, 0.2, 0.2)
-    love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-    
-    -- Draw calculator border
-    love.graphics.setColor(0.4, 0.4, 0.4)
-    love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-    
-    -- Draw display
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", self.x + 10, self.y + 10, self.width - 20, 60)
-    
     -- Draw display text
-    love.graphics.setColor(0, 1, 0)
+    love.graphics.setColor(0, 0, 0)
     love.graphics.printf(self.display == "" and "0" or self.display, 
-                        self.x + 20, self.y + 20, self.width - 40, "right")
+                        420, 96, 180, "right")
     
     -- Draw target number and game mode
     love.graphics.setColor(1, 1, 1)
-    local modeText = self.gameMode == "hit_target" and "Hit exactly:" or "Reach at least:"
+    local modeText = self.gameMode == "hit_target" and "Hit:" or "Reach:"
     love.graphics.printf(modeText .. " " .. self.targetNumber, 
-                        self.x + 10, self.y + 80, self.width - 20, "center")
+                        32, 128, 316, "left")
     
     -- Draw level and score
     love.graphics.printf("Level: " .. self.level, 
-                        self.x + 10, self.y + 100, self.width - 20, "center")
-    
-    -- Draw buttons
-    self:drawButtons()
+                       32, 128 + 48, 316, "left")
     
     -- Draw reward cards if active
     if self.rewardState.active then
@@ -435,13 +421,10 @@ function Calculator:initializeButtons()
     })
 end
 
-function Calculator:drawButtons()
-    -- Implementation of drawButtons function
-end
-
 function Calculator:drawRewardCards()
     -- Implementation of drawRewardCards function
     for _, card in ipairs(self.rewardState.cards) do
+        print("Drawing reward card " .. card.id)
         card:draw()
     end
 end

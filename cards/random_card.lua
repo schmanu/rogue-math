@@ -10,7 +10,7 @@ end
 
 function RandomCard:play(calculator)
     if not self.disabled then
-        local randomValue = math.random(1, 16)
+        local randomValue = math.random(0, 16)
         print("Random value to use: " .. randomValue)
         calculator:addInput(tostring(randomValue))
         return true

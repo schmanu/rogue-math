@@ -12,8 +12,10 @@ function OperatorCard.new(id, value, x, y)
         spriteName = "divide"
     elseif value == "^" then
         spriteName = "exp"
+    elseif value == "-" then
+        spriteName = "sub"
     end
-    local self = setmetatable(Card.new(id, value, x, y, "op_" .. spriteName, "operator"), OperatorCard)
+    local self = setmetatable(Card.new(id, x, y, "op_" .. spriteName, "operator"), OperatorCard)
     self.value = value
     return self
 end

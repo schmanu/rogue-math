@@ -3,7 +3,7 @@ local NumberCard = setmetatable({}, {__index = Card})
 NumberCard.__index = NumberCard
 
 function NumberCard.new(id, value, x, y)
-    local self = setmetatable(Card.new(id, value, x, y, "num_" .. value, "number"), NumberCard)
+    local self = setmetatable(Card.new(id, x, y, "num_" .. value, "number"), NumberCard)
     self.value = value
     return self
 end

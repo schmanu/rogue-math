@@ -3,6 +3,7 @@ local OperatorCard = require("cards/operator_card")
 local DoubleCard = require("cards/double_card")
 local RandomCard = require("cards/random_card")
 local ReverseCard = require("cards/reverse_card")
+local PrimeCard = require("cards/prime_card")
 
 local CardLibrary = {}
 CardLibrary.__index = CardLibrary
@@ -28,6 +29,7 @@ function CardLibrary.new()
         op_exp = "op_exp",
         mod_reverse = "mod_reverse",
         mod_double = "mod_double",
+        mod_prime = "mod_prime",
     }
     self.initialCardIds = {
         self.cardIds.num_0, 
@@ -41,7 +43,8 @@ function CardLibrary.new()
         self.cardIds.num_8, 
         self.cardIds.num_9, 
         self.cardIds.op_add, 
-        self.cardIds.op_add
+        self.cardIds.op_add,
+        self.cardIds.mod_prime,
     }
 
     return self
@@ -84,6 +87,8 @@ function CardLibrary:createCard(cardId, x, y)
         return ReverseCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_double then
         return DoubleCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.mod_prime then
+        return PrimeCard.new(cardId, x, y)
     end
 end
 

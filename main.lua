@@ -19,55 +19,23 @@ local game = {
     font = nil,
     seed = nil,
     drawPileUI = {
-        x = 50,  -- Keep left side position
-        y = 500,  -- Same y as hand cards
-        width = 60,
+        x = 36,  -- Keep left side position
+        y = 710,  -- Same y as hand cards
+        width = 128,
         height = 90,
         draw = function(self)
-            -- Draw card back
-            love.graphics.setColor(0.2, 0.4, 0.8)  -- Blue card back
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            
-            -- Draw card border
-            love.graphics.setColor(0.1, 0.2, 0.4)
-            love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-            
             -- Draw card count
             love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(self.parent.drawPile and #self.parent.drawPile or 0, self.x, self.y + 35, self.width, "center")
-            
-            -- Draw label
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf("Draw", self.x, self.y - 20, self.width, "center")
-        end
-    },
-    discardPileUI = {
-        x = 700,  -- Moved left to be between hand cards and buttons
-        y = 500,  -- Same y as hand cards
-        width = 60,
-        height = 90,
-        draw = function(self)
-            -- Draw card back
-            love.graphics.setColor(0.8, 0.2, 0.2)  -- Red card back
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            
-            -- Draw card border
-            love.graphics.setColor(0.4, 0.1, 0.1)
-            love.graphics.rectangle("line", self.x, self.y, self.width, self.height)
-            
-            -- Draw card count
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(self.parent.discardPile and #self.parent.discardPile or 0, self.x, self.y + 35, self.width, "center")
-            
-            -- Draw label
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf("Discard", self.x, self.y - 20, self.width, "center")
+            local drawPileCount = self.parent.drawPile and #self.parent.drawPile or 0
+            local discardPileCount = self.parent.discardPile and #self.parent.discardPile or 0
+            local handCount = self.parent.hand and #self.parent.hand or 0
+            love.graphics.printf(drawPileCount .. "/" .. discardPileCount + drawPileCount + handCount, self.x, self.y, self.width, "left")
         end
     },
     endTurnButton = {
         x = 800,  -- Align with discard pile
-        y = 450,  -- Move up above the cards
-        width = 120,
+        y = 500,  -- Move up above the cards
+        width = 144,
         height = 48,
         hovered = false,
         updateHoverState = function(self, x, y)
@@ -81,8 +49,8 @@ local game = {
     },
     discardButton = {
         x = 800,  -- Align with discard pile
-        y = 510,  -- Move down below the cards
-        width = 120,
+        y = 560,  -- Move down below the cards
+        width = 144,
         height = 48,
         hovered = false,
         enabled = false,
@@ -146,7 +114,7 @@ end
 function game:updateHandPosition()
     local centerX = love.graphics.getWidth() / 2 - 100
     local baseY = 500
-    local cardSpacing = 65
+    local cardSpacing = 90
     local maxRotation = 15  -- Maximum rotation in degrees
     
     -- Handle single card case
@@ -161,6 +129,7 @@ function game:updateHandPosition()
     local handWidth = (#self.hand - 1) * cardSpacing
     
     for i, card in ipairs(self.hand) do
+        print("Card " .. card.id)
         -- Calculate position along a curve
         local t = (i - 1) / (#self.hand - 1)  -- 0 to 1
         local curveOffset = math.sin(t * math.pi) * 20  -- Creates a slight curve
@@ -239,6 +208,10 @@ function game:discardSelectedCards()
 end
 
 function love.load()
+    -- Load pixel font
+    local pixelFont = love.graphics.newFont("sprites/PixelFont.ttf", 16)
+    love.graphics.setFont(pixelFont)
+    
     -- Set the seed
     game.seed = os.time()
     math.randomseed(game.seed)
@@ -248,17 +221,19 @@ function love.load()
     game.calculator = Calculator.new(100, 50, game)  -- Moved up from 100 to 50
     
     -- Set parent references for UI elements
-    game.drawPileUI.parent = game
-    game.discardPileUI.parent = game
-    
+    game.drawPileUI.parent = game    
     -- Initialize deck and hand
     game:initializeDeck()
     
     -- Load assets
     Assets.load()
+
     
+    
+    game.backgroundSprite = love.graphics.newImage("sprites/background.png")
     -- Load card sprites
     game.cardSprites = {}
+
     -- Load number sprites
     for i = 0, 9 do
         game.cardSprites["num_" .. i] = love.graphics.newImage("sprites/cards/num_" .. i .. ".png")
@@ -267,10 +242,13 @@ function love.load()
     game.cardSprites["op_plus"] = love.graphics.newImage("sprites/cards/op_plus.png")
     game.cardSprites["op_multiply"] = love.graphics.newImage("sprites/cards/op_multiply.png")
     game.cardSprites["op_divide"] = love.graphics.newImage("sprites/cards/op_divide.png")
+    game.cardSprites["op_exp"] = love.graphics.newImage("sprites/cards/op_exp.png")
+    game.cardSprites["op_sub"] = love.graphics.newImage("sprites/cards/op_sub.png")
     game.cardSprites["mod_x2"] = love.graphics.newImage("sprites/cards/mod_x2.png")
     game.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
     game.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
-    game.cardSprites["op_exp"] = love.graphics.newImage("sprites/cards/op_exp.png")
+    game.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")
+
     
     -- Initialize shaders
     game.shaders = {}
@@ -281,7 +259,7 @@ function love.load()
         vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords) {
             vec4 texcolor = Texel(tex, texture_coords);
             // Create a subtle glow effect
-            vec3 glowColor = borderColor * (0.5 + 0.1 * sin(texture_coords.x * 10.0));
+            vec3 glowColor = borderColor * (0.5 + 0.5 * max(0, sin(0.5 + texture_coords.y * 3.0)));
             return vec4(glowColor, 1) * texcolor;
         }
     ]]
@@ -342,8 +320,9 @@ end
 
 function love.draw()
     -- Draw background
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), love.graphics.getHeight())
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.setShader()
+    love.graphics.draw(game.backgroundSprite, 0, 0)
     
     -- Draw calculator
     game.calculator:draw()
@@ -356,8 +335,6 @@ function love.draw()
         card:draw()
     end
     
-    -- Draw discard pile UI (moved after hand cards to ensure it's on top)
-    game.discardPileUI:draw()
     
     -- Draw end turn button
     if game.endTurnButton.hovered then
@@ -376,7 +353,7 @@ function love.draw()
     
     -- Draw seed (for debugging)
     love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.printf("Seed: " .. game.seed, 10, 10, 200, "left")
+    love.graphics.printf("Seed: " .. game.seed, love.graphics.getWidth() - 300, love.graphics.getHeight() - 50, 300, "right")
 end
 
 function love.mousepressed(x, y, button)
@@ -457,7 +434,8 @@ function love.mousepressed(x, y, button)
         end
         
         -- Check if clicking on a card in hand
-        for _, card in ipairs(game.hand) do
+        for i = #game.hand, 1, -1 do
+            local card = game.hand[i]
             if card:containsPoint(x, y) then
                 if not card:isDisabled() then
                     card:startDragging()
@@ -522,14 +500,14 @@ end
 
 function Card:draw()
     -- Draw card sprite
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(0, 0, 0)
     local sprite = game.cardSprites[self.sprite]
     if sprite then
         local spriteWidth, spriteHeight = sprite:getDimensions()
-        
+        local scale = 4
         -- Update card dimensions to match sprite scaled up by 2
-        self.width = spriteWidth * 2
-        self.height = spriteHeight * 2
+        self.width = spriteWidth * scale
+        self.height = spriteHeight * scale
         
         -- Save the current graphics state
         love.graphics.push()
@@ -555,11 +533,12 @@ function Card:draw()
 
         game.shaders.cardBorder:send("borderColor", borderColor)
         -- Draw sprite scaled up by 2
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.draw(sprite, self.x, self.y, 0, 2, 2)
+        love.graphics.draw(sprite, self.x, self.y, 0, scale, scale)
         
         -- Restore the graphics state
         love.graphics.setShader()
         love.graphics.pop()
+    else 
+        print("Card sprite" .. self.sprite .. " not found")
     end
 end

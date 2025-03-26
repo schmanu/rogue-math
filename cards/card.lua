@@ -1,10 +1,9 @@
 local Card = {}
 Card.__index = Card
 
-function Card.new(id, value, x, y, sprite, type)
+function Card.new(id, x, y, sprite, type)
     local self = setmetatable({}, Card)
     self.id = id
-    self.value = value
     self.x = x
     self.y = y
     self.width = 60
