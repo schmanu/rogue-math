@@ -70,17 +70,17 @@ function Card:containsPoint(x, y)
 end
 
 -- Abstract play function that should be overridden by subclasses
-function Card:play(calculator)
+function Card:play(calculator, game)
     error("Card:play() is abstract and must be implemented by subclasses")
 end
 
 function Card:draw()
     -- Draw card sprite
-    love.graphics.setColor(0, 0, 0)
+    love.graphics.setColor(1, 1, 1)
     local sprite = Assets.cardSprites[self.sprite]
     if sprite then
         local spriteWidth, spriteHeight = sprite:getDimensions()
-        local scale = 4
+        local scale = 1
         -- Update card dimensions to match sprite scaled up by 2
         self.width = spriteWidth * scale
         self.height = spriteHeight * scale
@@ -102,7 +102,7 @@ function Card:draw()
         if self.selected then
             borderColor = {1, 0.8, 0}  -- Gold border for selected cards
         elseif self.disabled then
-            borderColor = {0.4, 0.4, 0.4}  -- Gray border for disabled cards
+            borderColor = {0.5, 0.5, 0.5}  -- Gray border for disabled cards
         else
             borderColor = {1, 1, 1}  -- White border for normal cards
         end

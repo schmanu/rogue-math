@@ -25,7 +25,7 @@ function PrimeCard:play(calculator)
                 end
 
                 -- Find next prime number
-                local nextNum = num
+                local nextNum = num + 1
                 while not isPrime(nextNum) do
                     nextNum = nextNum + 1
                 end

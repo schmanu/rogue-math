@@ -11,6 +11,7 @@ local CardLibrary = require("cards/card_library")
 local Game = require("game")
 
 local game = {
+    availableModules = {},
     drawPile = {},
     discardPile = {},
     hand = {},
@@ -22,7 +23,7 @@ local game = {
     seed = nil,
     game = nil,  -- Will be initialized in love.load
     drawPileUI = {
-        x = 36,  -- Keep left side position
+        x = 12,  -- Keep left side position
         y = 710,  -- Same y as hand cards
         width = 128,
         height = 90,
@@ -32,12 +33,12 @@ local game = {
             local drawPileCount = self.parent.drawPile and #self.parent.drawPile or 0
             local discardPileCount = self.parent.discardPile and #self.parent.discardPile or 0
             local handCount = self.parent.hand and #self.parent.hand or 0
-            love.graphics.printf(drawPileCount .. "/" .. discardPileCount + drawPileCount + handCount, self.x, self.y, self.width, "left")
+            love.graphics.printf(drawPileCount .. "/" .. discardPileCount + drawPileCount + handCount, self.x, self.y, self.width, "center")
         end
     },
     endTurnButton = {
         x = 800,  -- Align with discard pile
-        y = 500,  -- Move up above the cards
+        y = 516,  -- Move up above the cards
         width = 144,
         height = 48,
         hovered = false,
@@ -52,11 +53,11 @@ local game = {
     },
     discardButton = {
         x = 800,  -- Align with discard pile
-        y = 560,  -- Move down below the cards
+        y = 580,  -- Move down below the cards
         width = 144,
         height = 48,
         hovered = false,
-        enabled = false,
+        enabled = true,
         updateHoverState = function(self, x, y)
             self.hovered = x >= self.x and x <= self.x + self.width and
                           y >= self.y and y <= self.y + self.height
@@ -75,8 +76,7 @@ local game = {
             love.graphics.setColor(1, 1, 1)
             love.graphics.printf("Discard", self.x, self.y + 10, self.width, "center")
         end
-    },
-    canDiscard = true
+    }
 }
 
 function game:createCard(cardId, x, y)    
@@ -117,7 +117,7 @@ end
 function game:updateHandPosition()
     local centerX = love.graphics.getWidth() / 2 - 100
     local baseY = 500
-    local cardSpacing = 90
+    local handWidth = 450
     local maxRotation = 15  -- Maximum rotation in degrees
     
     -- Handle single card case
@@ -129,8 +129,9 @@ function game:updateHandPosition()
     end
     
     -- Calculate hand width and spacing for multiple cards
-    local handWidth = (#self.hand - 1) * cardSpacing
-    
+    local cardSpacing = handWidth / (#self.hand - 1)
+
+
     for i, card in ipairs(self.hand) do
         print("Card " .. card.id)
         -- Calculate position along a curve
@@ -175,12 +176,6 @@ function game:removeCard(card)
 end
 
 function game:discardSelectedCards()
-    print("Discarding selected cards...")
-    if not self.canDiscard then 
-        print("Cannot discard - already discarded this turn")
-        return 
-    end
-
     local selectedCount = 0
     for i = #self.hand, 1, -1 do
         if self.hand[i]:isSelected() then
@@ -192,8 +187,6 @@ function game:discardSelectedCards()
         end
     end
     
-    print("Selected cards removed:", selectedCount)
-    
     if selectedCount > 0 then
         -- Reposition remaining cards
         for i, card in ipairs(self.hand) do
@@ -203,10 +196,11 @@ function game:discardSelectedCards()
         -- Draw new cards
         self:drawNewCards(selectedCount)
         
-        -- Disable discarding for the rest of the turn
-        self.canDiscard = false
-        self.discardButton.enabled = false
-        print("Discard button disabled")
+        -- Decrease discards
+        self.game.discards = self.game.discards - 1
+        if (self.game.discards == 0) then
+            self.discardButton.enabled = false
+        end
     end
 end
 
@@ -224,7 +218,7 @@ function love.load()
     game.game.cardLibrary = game.cardLibrary  -- Pass card library reference
     
     -- Initialize calculator
-    game.calculator = Calculator.new(100, 50, game.game)
+    game.calculator = Calculator.new(392, 64, game.game)
     
     -- Set parent references for UI elements
     game.drawPileUI.parent = game
@@ -237,10 +231,6 @@ function love.load()
     -- Load assets
     Assets.load()
     Shaders.load()
-    
-    -- Initialize discard button state
-    game.canDiscard = true
-    game.discardButton.enabled = true
 end
 
 function love.update(dt)
@@ -274,11 +264,10 @@ function love.update(dt)
     -- Update button hover states
     game.endTurnButton:updateHoverState(mx, my)
     game.discardButton:updateHoverState(mx, my)
-    game.calculator:updateHoverState(mx, my)
     
     -- Update card disabled state based on calculator state
     for _, card in ipairs(game.hand) do
-        if game.calculator.gameState == "playing" then
+        if game.game.gameState == "playing" then
             -- Disable cards based on expected input type
             if game.calculator:getExpectedInputType() == "number" then
                 card:setDisabled(card.type == "operator" or card.type == "modifier")
@@ -293,6 +282,17 @@ function love.update(dt)
 end
 
 function love.draw()
+    if game.game.gameState == "gameOver" then
+        love.graphics.draw(Assets.gameOverSprite, 0, 0)
+        love.graphics.setColor(0,0,0,0.5)
+        love.graphics.rectangle("fill", 32, love.graphics.getHeight() / 2 - 32, love.graphics.getWidth() - 64, 196)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf("You were sent to boarding school due to your bad grades.", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
+        love.graphics.printf("Days Survived: " .. game.game.level, 0, love.graphics.getHeight() / 2 + 64, love.graphics.getWidth(), "center")
+        love.graphics.printf("Press R to restart", 0, love.graphics.getHeight() / 2 + 96, love.graphics.getWidth(), "center")
+        return
+    end
+    
     -- Draw background
     love.graphics.setColor(1, 1, 1)
     love.graphics.setShader()
@@ -326,10 +326,15 @@ function love.draw()
     
     -- Draw discard button
     game.discardButton:draw()
+    love.graphics.printf("(" .. game.game.discards .. ")", game.discardButton.x + game.discardButton.width + 8, game.discardButton.y + game.discardButton.height / 2 - 8, 64, "left")
     
     -- Draw seed (for debugging)
     love.graphics.setColor(0.5, 0.5, 0.5)
     love.graphics.printf("Seed: " .. game.seed, love.graphics.getWidth() - 300, love.graphics.getHeight() - 50, 300, "right")
+
+    -- Draw game state
+    game.game:draw()
+
 end
 
 function love.mousepressed(x, y, button)
@@ -337,32 +342,39 @@ function love.mousepressed(x, y, button)
         -- Check if clicking end turn button
         if game.endTurnButton:containsPoint(x, y) then
             game.calculator:endTurn()
-            game.canDiscard = true  -- Reset discard ability here instead
-            game.discardButton.enabled = true
             return
         end
         
         -- Check if clicking discard button
-        if game.discardButton.enabled and game.canDiscard and game.discardButton:containsPoint(x, y) then
-            print("Discard button clicked")
-            print("Button enabled:", game.discardButton.enabled)
-            print("Can discard:", game.canDiscard)
+        if game.game.discards > 0 and game.discardButton:containsPoint(x, y) then
             game:discardSelectedCards()
+            return
+        end
+
+        -- Check if clicking flip button
+        if game.calculator:flipButtonContainsPoint(x, y) then
+            game.calculator:flip()
+            return
+        end
+
+        -- Check if clicking tabs
+        if game.game.tabs:containsPoint(x, y) then
+            game.game.tabs:toggle()
             return
         end
         
         -- Check if clicking reward cards
-        if game.game.rewardState.active then
-            if game.calculator:handleRewardClick(x, y) then
+        if game.game.rewards.rewardState.active then
+            if game.game.rewards:handleRewardClick(x, y) then
                 -- Add selected card to draw pile
-                if game.game.rewardState.selectedCard then
+                if game.game.rewards.rewardState.selectedCard then
                     print("Stats before reward selection: " .. #game.drawPile .. " " .. #game.discardPile .. " " .. #game.hand)
 
                     -- Add the new card to the draw pile
-                    table.insert(game.drawPile, game.game.rewardState.selectedCard.id)
+                    table.insert(game.drawPile, game.game.rewards.rewardState.selectedCard.id)
                     
                     -- Start next level and draw new hand
-                    game.game.rewardState.active = false
+                    game.game.rewards.rewardState.active = false
                     game.calculator:reset()
                     game.game:startNextLevel()
 
@@ -397,8 +409,10 @@ function love.mousepressed(x, y, button)
                         end
                     end
 
-
                     game:updateHandPosition()
+
+                    -- Enable discard button
+                    game.discardButton.enabled = true
                 end
             end
             return
@@ -424,7 +438,7 @@ function love.mousereleased(x, y, button)
         -- Check if dropped on calculator
         if game.calculator:containsPoint(x, y) then
             -- Play the card
-            if game.draggedCard:play(game.calculator) then
+            if game.draggedCard:play(game.calculator, game) then
                 -- Add card to discard pile before removing from hand
                 table.insert(game.discardPile, game.draggedCard.id)
                 -- Remove card from hand
@@ -452,10 +466,6 @@ end
 function love.keypressed(key)
     if key == "escape" then
         love.event.quit()
-    elseif key == "return" then
-        game.calculator:evaluate()
-    elseif key == "c" then
-        game.calculator:clear()
     elseif key == "r" then
         -- Reset the game with a new random seed
         game:initializeDeck()
@@ -464,8 +474,6 @@ function love.keypressed(key)
         -- Reset the game with the same seed (for testing)
         game:initializeDeck(game.seed)
         game.calculator:reset()
-    elseif key == "space" and game.discardButton.enabled and game.canDiscard then
-        game:discardSelectedCards()
     end
 end
 

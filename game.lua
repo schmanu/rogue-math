@@ -1,3 +1,7 @@
+local Grade = require("grade")
+local Rewards = require("rewards")
+local Tabs = require("tabs")
+
 local Game = {}
 Game.__index = Game
 
@@ -5,22 +9,12 @@ function Game.new()
     local self = setmetatable({}, Game)
     self.level = 1
     self.gameMode = nil
+    self.grade = Grade.new(832, 64)
     self.targetNumber = 0
-    self.rewardState = {
-        active = false,
-        cards = {},
-        selectedCard = nil
-    }
-    self.rewardCards = {
-        "op_div",
-        "op_mul",
-        "num_random",
-        "op_sub",
-        "mod_double",
-        "mod_reverse",
-        "op_exp",
-        "mod_prime"
-    }
+    self.discards = 1
+    self.gameState = "playing"
+    self.rewards = Rewards.new()
+    self.tabs = Tabs.new(992, 480)
     return self
 end
 
@@ -30,6 +24,12 @@ function Game:initializeLevel()
     
     -- Calculate target number based on game mode
     self.targetNumber = self:calculateTargetNumber()
+
+    if (self.gameMode == "hit_target") then
+        self.discards = 2
+    else
+        self.discards = 1
+    end
 end
 
 function Game:startNextLevel()
@@ -57,41 +57,10 @@ function Game:calculateTargetNumber()
 end
 
 function Game:startRewardState()
-    self.rewardState.active = true
-    self:generateRewardCards()
+    self.rewards:prepareRewards()
 end
 
-function Game:generateRewardCards()
-    local available = {}
-    for _, card in ipairs(self.rewardCards) do
-        table.insert(available, card)
-    end
-    
-    -- Shuffle available cards
-    for i = #available, 2, -1 do
-        local j = math.random(i)
-        available[i], available[j] = available[j], available[i]
-    end
-    
-    -- Take first 3 cards
-    self.rewardState.cards = {}
-    local cardWidth = 120
-    local cardHeight = 180
-    local spacing = 40
-    local startX = (love.graphics.getWidth() - (cardWidth * 3 + spacing * 2)) / 2
-    
-    for i = 1, 3 do
-        local cardId = available[i]
-        local card = self.cardLibrary:createCard(cardId, startX + (i-1) * (cardWidth + spacing), 200)
-        table.insert(self.rewardState.cards, card)
-    end
-end
 
-function Game:drawRewardCards()
-    for _, card in ipairs(self.rewardState.cards) do
-        card:draw()
-    end
-end
 
 function Game:handleRewardClick(x, y)
     if not self.rewardState.active then return false end
@@ -122,6 +91,16 @@ function Game:reset()
     self.rewardState.active = false
     self.rewardState.cards = {}
     self.rewardState.selectedCard = nil
+end
+
+function Game:draw()
+    self.grade:draw()
+
+    if self.gameState == "levelComplete" then
+        self.rewards:draw()
+    end
+
+    self.tabs:draw()
 end
 
 return Game 

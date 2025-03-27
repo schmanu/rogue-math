@@ -18,9 +18,24 @@ Assets.colors = {
         text = {0.7, 0.7, 0.7, 1.0}         -- Light gray
     }
 }
-
+Assets.tabs = {
+    expanded = nil,
+    collapsed = nil,
+}
 Assets.cardSprites = {}
+Assets.moduleSprites = {}
 Assets.backgroundSprite = nil
+Assets.gameOverSprite = nil
+Assets.calculatorSprites = {
+    front = nil,
+    back = nil,
+    button_flip = nil,
+    modules = {
+        empty = nil,
+    }
+}
+
+Assets.gradeSprite = love.graphics.newImage("sprites/grade.png")
 
 -- Card dimensions
 Assets.card = {
@@ -32,7 +47,31 @@ Assets.card = {
 
 function Assets.load()
     print("Loading assets")
+
+    -- background
     Assets.backgroundSprite = love.graphics.newImage("sprites/background.png")
+
+    -- tabs
+    Assets.tabs = {
+        expanded = love.graphics.newImage("sprites/module_tab_expanded.png"),
+        collapsed = love.graphics.newImage("sprites/module_tab.png"),
+    }
+
+
+    -- calculator
+    Assets.calculatorSprite = love.graphics.newImage("sprites/calculator.png")
+    Assets.calculatorSprites = {
+        front = love.graphics.newImage("sprites/calculator.png"),
+        back = love.graphics.newImage("sprites/calculator_back.png"),
+        button_flip = love.graphics.newImage("sprites/flip_calc.png"),
+        modules = {
+            empty = love.graphics.newImage("sprites/modules/module_empty.png"),
+        }
+    }
+
+    -- game over screen
+    Assets.gameOverSprite = love.graphics.newImage("sprites/game_over.png")
+
     -- Load card sprites
     Assets.cardSprites = {}
 
@@ -50,6 +89,11 @@ function Assets.load()
     Assets.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
     Assets.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
     Assets.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")   
+    Assets.cardSprites["sp_draw3"] = love.graphics.newImage("sprites/cards/sp_draw3.png")
+
+    -- Load module sprites
+    Assets.moduleSprites = {}
+    Assets.moduleSprites["module_infinity"] = love.graphics.newImage("sprites/modules/module_infinity.png")
     return true
 end
 

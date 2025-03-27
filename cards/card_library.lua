@@ -4,6 +4,7 @@ local DoubleCard = require("cards/double_card")
 local RandomCard = require("cards/random_card")
 local ReverseCard = require("cards/reverse_card")
 local PrimeCard = require("cards/prime_card")
+local Draw3Card = require("cards/draw3_card")
 
 local CardLibrary = {}
 CardLibrary.__index = CardLibrary
@@ -30,6 +31,7 @@ function CardLibrary.new()
         mod_reverse = "mod_reverse",
         mod_double = "mod_double",
         mod_prime = "mod_prime",
+        sp_draw3 = "sp_draw3",
     }
     self.initialCardIds = {
         self.cardIds.num_0, 
@@ -88,6 +90,8 @@ function CardLibrary:createCard(cardId, x, y)
         return DoubleCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_prime then
         return PrimeCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.sp_draw3 then
+        return Draw3Card.new(cardId, x, y)
     end
 end
 
