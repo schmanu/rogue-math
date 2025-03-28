@@ -23,22 +23,37 @@ function Calculator.new(x, y, game)
         result = 0,
         targetReached = false
     }
+
+    self.modules = {
+        slot1 = nil,
+        slot2 = nil,
+    }
     
     -- Initialize button dimensions
     self.buttonSize = 40
     self.buttonSpacing = 8
-    self.buttons = {}
-    
-    -- Initialize buttons
-    self:initializeButtons()
+
+    self.slots = {
+        slot1 = {
+            x = self.x + 40,
+            y = self.y + 48,
+        },
+        slot2 = {
+            x = self.x + 132,
+            y = self.y + 120,
+        },
+    }
     
     return self
 end
 
-function Calculator:update(dt)
-    -- Update buttons
-    for _, button in ipairs(self.buttons) do
-        button:update(dt)
+function Calculator:onCardPlayed()
+    -- trigger onCardPlayed on all modules
+    if self.modules.slot1 then
+        self.modules.slot1:onCardPlayed()
+    end
+    if self.modules.slot2 then
+        self.modules.slot2:onCardPlayed()
     end
 end
 
@@ -48,9 +63,17 @@ function Calculator:draw()
     if self.flipped then
         love.graphics.draw(Assets.calculatorSprites.back, self.x, self.y, 0)
         -- Draw modules
-        love.graphics.draw(Assets.calculatorSprites.modules.empty, self.x + 40, self.y + 48, 0)
-        love.graphics.draw(Assets.calculatorSprites.modules.empty, self.x + 132, self.y + 120, 0)
+        if self.modules.slot1 then
+            self.modules.slot1:draw()
+        else
+            love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot1.x, self.slots.slot1.y, 0)
+        end
 
+        if self.modules.slot2 then
+            self.modules.slot2:draw()
+        else
+            love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot2.x, self.slots.slot2.y, 0)
+        end
     else
         love.graphics.draw(Assets.calculatorSprites.front, self.x, self.y, 0)
     end
@@ -84,6 +107,27 @@ function Calculator:draw()
     end
 end
 
+function Calculator:installModule(module, x, y)
+    -- Check closer to which slot it was dropped
+    local module_center_x = module.x + module.width/2
+    local module_center_y = module.y + module.height/2
+
+    local slot1_distance = math.sqrt((module_center_x - (self.slots.slot1.x + module.width / 2))^2 + (module_center_y - (self.slots.slot1.y + module.height / 2))^2)
+    local slot2_distance = math.sqrt((module_center_x - (self.slots.slot2.x + module.width / 2))^2 + (module_center_y - (self.slots.slot2.y + module.height / 2))^2)
+    
+    if slot1_distance < slot2_distance then
+        print("Installing module in slot 1")
+        self.modules.slot1 = module
+        module.x = self.slots.slot1.x
+        module.y = self.slots.slot1.y
+    else
+        print("Installing module in slot 2")
+        self.modules.slot2 = module
+        module.x = self.slots.slot2.x
+        module.y = self.slots.slot2.y
+    end
+end
+
 function Calculator:containsPoint(x, y)
     return x >= self.x and x <= self.x + self.width and
            y >= self.y and y <= self.y + self.height
@@ -100,17 +144,24 @@ end
 
 function Calculator:addInput(value)
     if self.game.gameState == "playing" then
+        local result = 0
         -- If display is empty, only allow numbers
         if self.display == "" then
-            self.display = value
-            
+            result = tonumber(value)
         else
             -- Calculate and show intermediary result
-            local result = self:calculateResult(tonumber(value))
+            result = self:calculateResult(tonumber(value))
             self.currentOperation = nil
-            self.display = tostring(result)
         end
 
+        -- format display such that it fits (8 characters to fit the next operator)
+        local display_length = 8
+        local formatted_result =tostring(result)
+        if #formatted_result > display_length then
+            self.display = string.format("%.4g", result)
+        else
+            self.display = formatted_result
+        end
         self:setExpectedInputType("operator")
     end
 end
@@ -222,11 +273,11 @@ end
 
 function Calculator:reset()
     self.display = ""
+    self.game.gameState = "playing"
     self.currentValue = 0
     self.currentOperation = nil
     self.operatorMode = nil
     self.expectedInputType = "number"
-    self.game.gameState = "playing"
     self.animationState.active = false
 end
 
@@ -238,106 +289,6 @@ function Calculator:getExpectedInputType()
     return self.expectedInputType
 end
 
-function Calculator:initializeButtons()
-    -- Create number buttons (1-9)
-    for i = 1, 9 do
-        local row = math.ceil(i/3) - 1
-        local col = (i-1) % 3
-        table.insert(self.buttons, {
-            value = tostring(i),
-            x = self.x + 20 + col * (self.buttonSize + self.buttonSpacing),
-            y = self.y + 150 + row * (self.buttonSize + self.buttonSpacing),
-            width = self.buttonSize,
-            height = self.buttonSize,
-            hovered = false,
-            draw = function(self)
-                if self.hovered then
-                    love.graphics.setColor(0.4, 0.4, 0.4)
-                else
-                    love.graphics.setColor(0.3, 0.3, 0.3)
-                end
-                love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-                love.graphics.setColor(1, 1, 1)
-                love.graphics.printf(self.value, self.x, self.y + 10, self.width, "center")
-            end,
-            update = function(self, dt)
-                -- No update needed for now
-            end
-        })
-    end
-    
-    -- Create operator buttons
-    local operators = {"+", "-", "×", "÷"}
-    for i, op in ipairs(operators) do
-        table.insert(self.buttons, {
-            value = op,
-            x = self.x + 20 + (i-1) * (self.buttonSize + self.buttonSpacing),
-            y = self.y + 150 + 3 * (self.buttonSize + self.buttonSpacing),
-            width = self.buttonSize,
-            height = self.buttonSize,
-            hovered = false,
-            draw = function(self)
-                if self.hovered then
-                    love.graphics.setColor(0.4, 0.4, 0.4)
-                else
-                    love.graphics.setColor(0.3, 0.3, 0.3)
-                end
-                love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-                love.graphics.setColor(1, 1, 1)
-                love.graphics.printf(self.value, self.x, self.y + 10, self.width, "center")
-            end,
-            update = function(self, dt)
-                -- No update needed for now
-            end
-        })
-    end
-    
-    -- Add clear and equals buttons
-    table.insert(self.buttons, {
-        value = "C",
-        x = self.x + 20,
-        y = self.y + 150 + 4 * (self.buttonSize + self.buttonSpacing),
-        width = self.buttonSize,
-        height = self.buttonSize,
-        hovered = false,
-        draw = function(self)
-            if self.hovered then
-                love.graphics.setColor(0.4, 0.4, 0.4)
-            else
-                love.graphics.setColor(0.3, 0.3, 0.3)
-            end
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(self.value, self.x, self.y + 10, self.width, "center")
-        end,
-        update = function(self, dt)
-            -- No update needed for now
-        end
-    })
-    
-    table.insert(self.buttons, {
-        value = "=",
-        x = self.x + 20 + self.buttonSize + self.buttonSpacing,
-        y = self.y + 150 + 4 * (self.buttonSize + self.buttonSpacing),
-        width = self.buttonSize,
-        height = self.buttonSize,
-        hovered = false,
-        draw = function(self)
-            if self.hovered then
-                love.graphics.setColor(0.4, 0.4, 0.4)
-            else
-                love.graphics.setColor(0.3, 0.3, 0.3)
-            end
-            love.graphics.rectangle("fill", self.x, self.y, self.width, self.height)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(self.value, self.x, self.y + 10, self.width, "center")
-        end,
-        update = function(self, dt)
-            -- No update needed for now
-        end
-    })
-end
-
 function Calculator:initializeLevel()
     -- Reset calculator state
     self.display = ""
@@ -345,7 +296,6 @@ function Calculator:initializeLevel()
     self.currentOperation = nil
     self.operatorMode = nil
     self.expectedInputType = "number"
-    self.game.gameState = "playing"
     self:setOperatorMode(nil, nil)
 end
 

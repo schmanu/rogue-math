@@ -6,14 +6,14 @@ ModuleLibrary.__index = ModuleLibrary
 function ModuleLibrary.new()
     local self = setmetatable({}, ModuleLibrary)
     self.moduleIds = {
-        mod_infinity = "infinity",
+        infinity = "infinity",
     }
 
     return self
 end
 
 function ModuleLibrary:createModule(moduleId, x, y) 
-    if moduleId == self.moduleIds.mod_infinity then
+    if moduleId == self.moduleIds.infinity then
         return InfinityModule.new(moduleId, x, y)
     end
 end

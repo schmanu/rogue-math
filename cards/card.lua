@@ -19,6 +19,8 @@ function Card.new(id, x, y, sprite, type)
     self.disabled = false
     self.sprite = sprite
     self.type = type
+    self.objectName = "Card"
+    self.tooltip = ""
     return self
 end
 
@@ -114,7 +116,38 @@ function Card:draw()
         -- Restore the graphics state
         love.graphics.setShader()
         love.graphics.pop()
-    else 
+
+        -- Draw tooltip
+        if self.hovered then
+            love.graphics.setColor(0, 0, 0, 0.8)
+            local padding = 16
+            local tooltipWidth = love.graphics.getFont():getWidth(self.tooltip) + padding * 2
+            local tooltipHeight = love.graphics.getFont():getHeight() * 5 + padding
+            
+            -- Get screen dimensions
+            local screenWidth = love.graphics.getWidth()
+            local screenHeight = love.graphics.getHeight()
+            
+            -- Calculate tooltip position centered under module
+            local tooltipX = self.x + (self.width/2) - (tooltipWidth/2)
+            local tooltipY = self.y + self.height + 10
+            
+            -- Adjust X position if tooltip would go off screen edges
+            if tooltipX + tooltipWidth > screenWidth then
+                tooltipX = screenWidth - tooltipWidth
+            elseif tooltipX < 0 then
+                tooltipX = 0
+            end
+            
+            -- Adjust Y position if tooltip would go off bottom edge
+            if tooltipY + tooltipHeight > screenHeight then
+                tooltipY = self.y - tooltipHeight - 10 -- Show above instead
+            end
+            
+            love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipWidth, tooltipHeight)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print(self.tooltip, tooltipX + padding, tooltipY + padding/2)
+        end
     end
 end
 

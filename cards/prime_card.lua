@@ -5,6 +5,7 @@ PrimeCard.__index = PrimeCard
 function PrimeCard.new(id, x, y)
     local self = setmetatable(Card.new(id, x, y, "mod_prime", "modifier"), PrimeCard)
     self.type = "modifier"  -- New type for special cards
+    self.tooltip = "Prime Card\n\nSets the calculator's value to the next prime number"
     return self
 end
 

@@ -14,7 +14,7 @@ function Game.new()
     self.discards = 1
     self.gameState = "playing"
     self.rewards = Rewards.new()
-    self.tabs = Tabs.new(992, 480)
+    self.tabs = Tabs.new(992, 128)
     return self
 end
 
@@ -30,13 +30,14 @@ function Game:initializeLevel()
     else
         self.discards = 1
     end
+
+    self.gameState = "playing"
 end
 
 function Game:startNextLevel()
     -- Increment level and initialize new level
     self.level = self.level + 1
     self:initializeLevel()
-
 end
 
 function Game:calculateTargetNumber()
@@ -91,6 +92,7 @@ function Game:reset()
     self.rewardState.active = false
     self.rewardState.cards = {}
     self.rewardState.selectedCard = nil
+    self.gameState = "playing"
 end
 
 function Game:draw()

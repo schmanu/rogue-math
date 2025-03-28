@@ -5,6 +5,7 @@ DoubleCard.__index = DoubleCard
 function DoubleCard.new(id, x, y)
     local self = setmetatable(Card.new(id, x, y, "mod_x2", "modifier"), DoubleCard)
     self.type = "operator"  -- New type for special cards
+    self.tooltip = "Double Card\n\nDoubles the current value of the calculator"
     return self
 end
 
@@ -16,7 +17,6 @@ function DoubleCard:play(calculator)
             -- Convert to number and double it
             local num = tonumber(currentValue)
             if num then
-                print("Double card played: " .. num * 2)
                 -- Clear the display and add the doubled value
                 calculator:clear()
                 calculator:addInput(tostring(num * 2))

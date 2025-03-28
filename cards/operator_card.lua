@@ -17,6 +17,7 @@ function OperatorCard.new(id, value, x, y)
     end
     local self = setmetatable(Card.new(id, x, y, "op_" .. spriteName, "operator"), OperatorCard)
     self.value = value
+    self.tooltip = "Operator Card\n\nApplies the " .. value .. " operator. \nA number card must be played afterwards."
     return self
 end
 

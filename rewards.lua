@@ -15,7 +15,6 @@ function Rewards.new()
         active = false,
         cards = {},
         modules = {},
-        selectedCard = nil,
         rewardType = nil,
     }
 
@@ -39,18 +38,16 @@ function Rewards.new()
 end
 
 function Rewards:prepareRewards()
-    -- flip a coin to determine if we are using cards or modules
-    local coin = math.random(2)
-    if coin == 1 then
-        self.rewardState.rewardType = "cards"
-        self:generateRewardCards()
-    else
+    -- Every 5th level gets a module, otherwise cards
+    if GAME.game.level % 5 == 0 then
         self.rewardState.rewardType = "modules"
         self:generateRewardModules()
+    else
+        self.rewardState.rewardType = "cards"
+        self:generateRewardCards()
     end
 
     self.rewardState.active = true
-
 end
 
 function Rewards:generateRewardCards()
@@ -130,17 +127,26 @@ function Rewards:handleRewardClick(x, y)
     local spacing = 40
     local startX = (love.graphics.getWidth() - (cardWidth * 3 + spacing * 2)) / 2
     
-    for i, card in ipairs(self.rewardState.cards) do
-        local cardX = startX + (i-1) * (cardWidth + spacing)
-        local cardY = 200
-        
-        if x >= cardX and x <= cardX + cardWidth and
-           y >= cardY and y <= cardY + cardHeight then
-            self.rewardState.selectedCard = card
-            return true
+    -- Check if clicking on a card
+    if self.rewardState.rewardType == "cards" then
+        for i, card in ipairs(self.rewardState.cards) do
+            if card:containsPoint(x, y) then
+                GAME:addCardToDrawPile(card.id)
+                GAME:prepareNextLevel()
+                self.rewardState.active = false
+                return true
+            end
+        end
+    elseif self.rewardState.rewardType == "modules" then
+        for i, module in ipairs(self.rewardState.modules) do
+            if module:containsPoint(x, y) then
+                GAME.game.tabs:addModule(module)
+                GAME:prepareNextLevel()
+                self.rewardState.active = false
+                return true
+            end
         end
     end
-    
     return false
 end
 

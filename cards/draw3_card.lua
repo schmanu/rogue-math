@@ -5,6 +5,7 @@ Draw3Card.__index = Draw3Card
 function Draw3Card.new(id, x, y)
     local self = setmetatable(Card.new(id, x, y, "sp_draw3", "special"), Draw3Card)
     self.type = "special"  -- New type for special cards
+    self.tooltip = "Draw 3 Card\n\nDraws 3 cards from the deck"
     return self
 end
 

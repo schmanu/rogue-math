@@ -15,6 +15,9 @@ function Module.new(id, x, y, sprite)
     self.dragOffsetX = 0
     self.dragOffsetY = 0
     self.sprite = sprite
+    self.objectName = "Module"
+    self.hovered = false
+    self.tooltip = ""
     return self
 end
 
@@ -27,13 +30,16 @@ function Module:update(dt)
     end
 end
 
+function Module:updatePosition(x, y)
+    self.x = x
+    self.y = y
+end
+
 function Module:startDragging()
-    if not self.disabled then
-        self.dragging = true
-        local mx, my = love.mouse.getPosition()
-        self.dragOffsetX = self.x - mx
-        self.dragOffsetY = self.y - my
-    end
+    self.dragging = true
+    local mx, my = love.mouse.getPosition()
+    self.dragOffsetX = self.x - mx
+    self.dragOffsetY = self.y - my
 end
 
 function Module:stopDragging()
@@ -49,6 +55,9 @@ function Module:containsPoint(x, y)
            y >= self.y and y < self.y + self.height
 end
 
+function Module:onCardPlayed()
+    -- can be overridden by subclasses
+end
 
 function Module:draw()
     -- Draw card sprite
@@ -63,7 +72,37 @@ function Module:draw()
         
         -- Draw sprite
         love.graphics.draw(sprite, self.x, self.y, 0, scale, scale)
-        
+        -- Draw tooltip
+        if self.hovered then
+            love.graphics.setColor(0, 0, 0, 0.8)
+            local padding = 16
+            local tooltipWidth = love.graphics.getFont():getWidth(self.tooltip) + padding * 2
+            local tooltipHeight = love.graphics.getFont():getHeight() * 3 + padding
+            
+            -- Get screen dimensions
+            local screenWidth = love.graphics.getWidth()
+            local screenHeight = love.graphics.getHeight()
+            
+            -- Calculate tooltip position centered under module
+            local tooltipX = self.x + (self.width/2) - (tooltipWidth/2)
+            local tooltipY = self.y + self.height + 10
+            
+            -- Adjust X position if tooltip would go off screen edges
+            if tooltipX + tooltipWidth > screenWidth then
+                tooltipX = screenWidth - tooltipWidth
+            elseif tooltipX < 0 then
+                tooltipX = 0
+            end
+            
+            -- Adjust Y position if tooltip would go off bottom edge
+            if tooltipY + tooltipHeight > screenHeight then
+                tooltipY = self.y - tooltipHeight - 10 -- Show above instead
+            end
+            
+            love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipWidth, tooltipHeight)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print(self.tooltip, tooltipX + padding, tooltipY + padding/2)
+        end
     else 
     end
 end

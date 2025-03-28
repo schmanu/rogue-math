@@ -5,6 +5,7 @@ NumberCard.__index = NumberCard
 function NumberCard.new(id, value, x, y)
     local self = setmetatable(Card.new(id, x, y, "num_" .. value, "number"), NumberCard)
     self.value = value
+    self.tooltip = "Number Card\n\nTypes " .. value .. " into the calculator when played"
     return self
 end
 
