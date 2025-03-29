@@ -21,15 +21,58 @@ function Card.new(id, x, y, sprite, type)
     self.type = type
     self.objectName = "Card"
     self.tooltip = ""
+    -- Add animation state
+    self.animationState = {
+        rotation = 0,
+        scale = 1,
+        targetRotation = 0,
+        targetScale = 1,
+        animating = false,
+        duration = 0.3,
+        elapsed = 0
+    }
     return self
 end
 
 function Card:update(dt)
+    local mx, my = love.mouse.getPosition()
+
     -- Update card position if being dragged
     if self.dragging then
-        local mx, my = love.mouse.getPosition()
         self.x = mx + self.dragOffsetX
         self.y = my + self.dragOffsetY
+    end
+
+    if not GAME.draggedElement then
+        if self:containsPoint(mx, my) then
+            self:setHovered(true)
+        else
+            self:setHovered(false)
+        end
+    else
+        self:setHovered(false)
+    end
+
+    -- Update animation
+    if self.animationState.animating then
+        self.animationState.elapsed = self.animationState.elapsed + dt
+        local progress = self.animationState.elapsed / self.animationState.duration
+        
+        if progress >= 1 then
+            self.animationState.rotation = self.animationState.targetRotation
+            self.animationState.scale = self.animationState.targetScale
+            self.animationState.animating = false
+        else
+            -- Use smooth easing function
+            progress = 1 - math.cos(progress * math.pi / 2)  -- Ease out
+            self.animationState.rotation = self.animationState.rotation + (self.animationState.targetRotation - self.animationState.rotation) * progress
+            self.animationState.scale = self.animationState.scale + (self.animationState.targetScale - self.animationState.scale) * progress
+        end
+    end
+
+    -- set animation rotation to rotation if not dragging or hovering   
+    if not self.dragging and not self.hovered then
+        self.animationState.rotation = self.rotation or 0
     end
 end
 
@@ -39,15 +82,43 @@ function Card:startDragging()
         local mx, my = love.mouse.getPosition()
         self.dragOffsetX = self.x - mx
         self.dragOffsetY = self.y - my
+        -- Start animation
+        self.animationState.animating = true
+        self.animationState.elapsed = 0
+        self.animationState.targetRotation = 0
+        self.animationState.targetScale = 1.1
     end
 end
 
 function Card:stopDragging()
     self.dragging = false
+    -- Start animation back to normal
+    self.animationState.animating = true
+    self.animationState.elapsed = 0
+    self.animationState.targetRotation = self.rotation or 0
+    self.animationState.targetScale = 1
 end
 
 function Card:setHovered(hovered)
-    self.hovered = hovered
+    if self.hovered ~= hovered then
+        self.hovered = hovered
+        -- Start animation
+        self.animationState.animating = true
+        self.animationState.elapsed = 0
+        if hovered or self.dragging then
+            self.animationState.targetRotation = 0
+            self.animationState.targetScale = 1.1
+        else
+            self.animationState.targetRotation = self.rotation or 0
+            self.animationState.targetScale = 1
+        end
+        if hovered then
+            if GAME.uiState.hoveredElement and GAME.uiState.hoveredElement ~= self then
+                GAME.uiState.hoveredElement:setHovered(false)
+            end
+            GAME.uiState.hoveredElement = self
+        end
+    end
 end
 
 function Card:setSelected(selected)
@@ -96,7 +167,8 @@ function Card:draw()
         
         -- Move to card center, rotate, then move back
         love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
-        love.graphics.rotate(math.rad(self.rotation or 0))
+        love.graphics.rotate(math.rad(self.animationState.rotation))
+        love.graphics.scale(self.animationState.scale, self.animationState.scale)
         love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
         
         -- Set background shader

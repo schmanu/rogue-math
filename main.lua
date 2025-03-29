@@ -16,6 +16,9 @@ GAME = {
             cardsPlayed = 0,
         },
     },
+    uiState = {
+        hoveredElement = nil,
+    },
     availableModules = {},
     drawPile = {},
     discardPile = {},
@@ -286,18 +289,9 @@ function love.load()
 end
 
 function love.update(dt)
-    -- Update cards in hand only
-    for _, card in ipairs(GAME.hand) do
-        card:update(dt)
-    end
-    
-    -- Update calculator
-    GAME.calculator:update(dt)
-    
-    -- Update hover state
+
+    -- Get mouse position
     local mx, my = love.mouse.getPosition()
-    GAME.hoveredCard = nil
-    GAME.hoveredModule = nil
 
     -- combine all possible shown cards: hand and reward cards
     local allCards = {}
@@ -322,33 +316,18 @@ function love.update(dt)
         end
     end
 
-    -- Only check hover state if not dragging
-    if not GAME.draggedElement then
-        -- Check if hovering over a hand card
-        for _, card in ipairs(allCards) do
-            if card:containsPoint(mx, my) then
-                GAME.hoveredCard = card
-                break
-            end
-        end
-        -- Check if hovering over a module in the tab inventory
-        for _, module in ipairs(allModules) do
-            if module:containsPoint(mx, my) then
-                GAME.hoveredModule = module
-                break
-            end
-        end
-    end
-    
-    -- Update card hover states
+    -- Update all cards (hand and rewards) in reverse order
     for _, card in ipairs(allCards) do
-        card:setHovered(card == GAME.hoveredCard)
+        card:update(dt)
     end
 
-    -- Update modules in tabs inventory hover states
+    -- Update all modules (tabs and calculator)
     for _, module in ipairs(allModules) do
-        module:setHovered(module == GAME.hoveredModule)
+        module:update(dt)
     end
+    
+    -- Update calculator
+    GAME.calculator:update(dt)
 
     -- Update tabs
     GAME.game.tabs:update(dt)
@@ -427,9 +406,13 @@ function love.draw()
     -- Draw game state
     GAME.game:draw()
 
-    -- Draw hovered module again such that the tooltip is visible
-    if GAME.hoveredModule then
-        GAME.hoveredModule:draw()
+    if GAME.uiState.hoveredElement then
+        GAME.uiState.hoveredElement:draw()
+    end
+
+    -- Draw dragged element again such that it is on top of everything
+    if GAME.draggedElement then
+        GAME.draggedElement:draw()
     end
 end
 

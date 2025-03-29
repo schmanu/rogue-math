@@ -22,11 +22,22 @@ function Module.new(id, x, y, sprite)
 end
 
 function Module:update(dt)
+    local mx, my = love.mouse.getPosition()
+
     -- Update card position if being dragged
     if self.dragging then
-        local mx, my = love.mouse.getPosition()
         self.x = mx + self.dragOffsetX
         self.y = my + self.dragOffsetY
+    end
+
+    if not GAME.draggedElement then
+        if self:containsPoint(mx, my) then
+            self:setHovered(true)
+        else
+            self:setHovered(false)
+        end
+    else
+        self:setHovered(false)
     end
 end
 
@@ -40,7 +51,7 @@ function Module:startDragging()
     local mx, my = love.mouse.getPosition()
     self.dragOffsetX = self.x - mx
     self.dragOffsetY = self.y - my
-end
+end 
 
 function Module:stopDragging()
     self.dragging = false
@@ -48,6 +59,12 @@ end
 
 function Module:setHovered(hovered)
     self.hovered = hovered
+    if hovered then
+        if GAME.uiState.hoveredElement and GAME.uiState.hoveredElement ~= self then
+            GAME.uiState.hoveredElement:setHovered(false)
+        end
+        GAME.uiState.hoveredElement = self
+    end
 end
 
 function Module:containsPoint(x, y)
