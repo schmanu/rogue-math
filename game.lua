@@ -20,7 +20,7 @@ end
 
 function Game:initializeLevel()
     -- Randomly select game mode
-    self.gameMode = math.random() < 0.5 and "hit_target" or "reach_target"
+    self.gameMode = "reach_target"
     
     -- Calculate target number based on game mode
     self.targetNumber = self:calculateTargetNumber()

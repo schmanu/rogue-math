@@ -47,13 +47,13 @@ function Calculator.new(x, y, game)
     return self
 end
 
-function Calculator:onCardPlayed()
+function Calculator:onCardPlayed(card)
     -- trigger onCardPlayed on all modules
     if self.modules.slot1 then
-        self.modules.slot1:onCardPlayed()
+        self.modules.slot1:onCardPlayed(card)
     end
     if self.modules.slot2 then
-        self.modules.slot2:onCardPlayed()
+        self.modules.slot2:onCardPlayed(card)
     end
 end
 
@@ -114,7 +114,7 @@ function Calculator:installModule(module, x, y)
 
     local slot1_distance = math.sqrt((module_center_x - (self.slots.slot1.x + module.width / 2))^2 + (module_center_y - (self.slots.slot1.y + module.height / 2))^2)
     local slot2_distance = math.sqrt((module_center_x - (self.slots.slot2.x + module.width / 2))^2 + (module_center_y - (self.slots.slot2.y + module.height / 2))^2)
-    
+
     if slot1_distance < slot2_distance then
         print("Installing module in slot 1")
         self.modules.slot1 = module

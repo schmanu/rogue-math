@@ -14,6 +14,8 @@ function OperatorCard.new(id, value, x, y)
         spriteName = "exp"
     elseif value == "-" then
         spriteName = "sub"
+    elseif value == "⊕" then
+        spriteName = "concat"
     end
     local self = setmetatable(Card.new(id, x, y, "op_" .. spriteName, "operator"), OperatorCard)
     self.value = value
@@ -34,6 +36,8 @@ function OperatorCard:play(calculator)
                 return firstValue / secondValue
             elseif self.value == "^" then
                 return firstValue ^ secondValue
+            elseif self.value == "⊕" then
+                return firstValue .. secondValue
             end
             return firstValue
         end

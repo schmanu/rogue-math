@@ -79,21 +79,32 @@ function Assets.load()
     for i = 0, 9 do
         Assets.cardSprites["num_" .. i] = love.graphics.newImage("sprites/cards/num_" .. i .. ".png")
     end
+
+    Assets.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
+    Assets.cardSprites["num_0.001"] = love.graphics.newImage("sprites/cards/num_0001.png")
+    Assets.cardSprites["num_100"] = love.graphics.newImage("sprites/cards/num_100.png")
+    Assets.cardSprites["num_pow2"] = love.graphics.newImage("sprites/cards/num_pow2.png")
+
     -- Load operator sprites
     Assets.cardSprites["op_plus"] = love.graphics.newImage("sprites/cards/op_plus.png")
     Assets.cardSprites["op_multiply"] = love.graphics.newImage("sprites/cards/op_multiply.png")
     Assets.cardSprites["op_divide"] = love.graphics.newImage("sprites/cards/op_divide.png")
     Assets.cardSprites["op_exp"] = love.graphics.newImage("sprites/cards/op_exp.png")
     Assets.cardSprites["op_sub"] = love.graphics.newImage("sprites/cards/op_sub.png")
+    Assets.cardSprites["op_concat"] = love.graphics.newImage("sprites/cards/op_concat.png")
+    -- Modifiers
     Assets.cardSprites["mod_x2"] = love.graphics.newImage("sprites/cards/mod_x2.png")
-    Assets.cardSprites["num_rand"] = love.graphics.newImage("sprites/cards/num_rand.png")
     Assets.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
-    Assets.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")   
+    Assets.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")
+    Assets.cardSprites["mod_inverse"] = love.graphics.newImage("sprites/cards/mod_inverse.png")
+
+    -- Special cards
     Assets.cardSprites["sp_draw3"] = love.graphics.newImage("sprites/cards/sp_draw3.png")
 
     -- Load module sprites
     Assets.moduleSprites = {}
     Assets.moduleSprites["module_infinity"] = love.graphics.newImage("sprites/modules/module_infinity.png")
+    Assets.moduleSprites["module_count"] = love.graphics.newImage("sprites/modules/module_count.png")
     return true
 end
 

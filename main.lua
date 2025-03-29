@@ -11,6 +11,11 @@ local CardLibrary = require("cards/card_library")
 local Game = require("game")
 
 GAME = {
+    stats = {
+        round = {
+            cardsPlayed = 0,
+        },
+    },
     availableModules = {},
     drawPile = {},
     discardPile = {},
@@ -91,7 +96,7 @@ function GAME:initializeDeck(seed)
     -- Create a limited number of cards (enough for 2-3 hands)
     for i = 1, #self.cardLibrary.initialCardIds do
         local cardId = self.cardLibrary.initialCardIds[i]
-        table.insert(self.drawPile, cardId)  -- Store just the cardId, not the card object
+        table.insert(self.drawPile, self:createCard(cardId, 0, 0)) -- Position will be set by updateHandPosition
     end
     
     -- Shuffle draw pile
@@ -104,8 +109,7 @@ function GAME:initializeDeck(seed)
     self.hand = {}
     for i = 1, 5 do
         if #self.drawPile > 0 then
-            local cardId = table.remove(self.drawPile)
-            local card = self:createCard(cardId, 0, 0)  -- Position will be set by updateHandPosition
+            local card = table.remove(self.drawPile)
             table.insert(self.hand, card)
         end
     end
@@ -152,8 +156,7 @@ function GAME:drawNewCards(count)
     -- Draw new cards from draw pile
     for i = 1, count do
         if #self.drawPile > 0 then
-            local cardId = table.remove(self.drawPile)
-            local card = self:createCard(cardId, 0, 0)  -- Position will be set by updateHandPosition
+            local card = table.remove(self.drawPile)
             table.insert(self.hand, card)
         end
     end
@@ -179,7 +182,7 @@ function GAME:discardSelectedCards()
     for i = #self.hand, 1, -1 do
         if self.hand[i]:isSelected() then
             -- Add card to discard pile before removing from hand
-            table.insert(self.discardPile, self.hand[i].id)
+            table.insert(self.discardPile, self.hand[i])
             table.remove(self.hand, i)
             selectedCount = selectedCount + 1
         end
@@ -203,16 +206,16 @@ function GAME:discardSelectedCards()
 end
 
 function GAME:addCardToDrawPile(cardId)
-    table.insert(self.drawPile, cardId)
+    table.insert(self.drawPile, self:createCard(cardId, 0, 0))
 end
 
 function GAME:resetGame()
     GAME.calculator:reset()
     GAME.game:reset()
-
 end
 
 function GAME:prepareNextLevel()
+    GAME.stats.round.cardsPlayed = 0
     GAME.calculator:reset()
     GAME.game:startNextLevel()
 
@@ -222,7 +225,7 @@ function GAME:prepareNextLevel()
         table.insert(GAME.drawPile, card)
     end
     for _, card in ipairs(GAME.hand) do
-        table.insert(GAME.drawPile, card.id)
+        table.insert(GAME.drawPile, card)
     end
     GAME.discardPile = {}  -- Clear discard pile
     
@@ -239,8 +242,9 @@ function GAME:prepareNextLevel()
 
     for i = 1, 5 do
         if #GAME.drawPile > 0 then
-            local cardId = table.remove(GAME.drawPile)
-            local card = GAME:createCard(cardId, 130 + (i-1) * 65, 500)
+            local card = table.remove(GAME.drawPile)
+            -- unselect card
+            card:setSelected(false)
             table.insert(GAME.hand, card)
         end
     end
@@ -252,6 +256,7 @@ function GAME:prepareNextLevel()
 end
 
 function love.load()
+    print("Test: " .. loadstring("return 4 * (1 .. 0)")())
     -- Load pixel font
     local pixelFont = love.graphics.newFont("sprites/PixelFont.ttf", 16)
     love.graphics.setFont(pixelFont)
@@ -341,7 +346,7 @@ function love.update(dt)
     for _, module in ipairs(allModules) do
         module:setHovered(module == GAME.hoveredModule)
     end
-    
+
     -- Update tabs
     GAME.game.tabs:update(dt)
     
@@ -489,23 +494,22 @@ function love.mousereleased(x, y, button)
             if GAME.draggedElement.objectName == "Card" then
             -- Play the card
                 if GAME.draggedElement:play(GAME.calculator, GAME) then
+                    -- Record that a card was played
+                    GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
                     -- Add card to discard pile before removing from hand
-                    table.insert(GAME.discardPile, GAME.draggedElement.id)
+                    table.insert(GAME.discardPile, GAME.draggedElement)
                     -- Remove card from hand
                     GAME:removeCard(GAME.draggedElement)
 
                     -- trigger onCardPlayed on calculator
-                    GAME.calculator:onCardPlayed()
+                    print("onCardPlayed " .. GAME.draggedElement.id)
+                    GAME.calculator:onCardPlayed(GAME.draggedElement)
                 end
             elseif GAME.draggedElement.objectName == "Module" then
                 -- add to calculator
                 GAME.calculator:installModule(GAME.draggedElement, x, y)
                 -- remove from tabs
                 GAME.game.tabs:removeModule(GAME.draggedElement)
-                -- trigger onCardPlayed on all modules
-                for _, module in ipairs(GAME.game.tabs.modules) do
-                    module:onCardPlayed()
-                end
             end
         else
             -- Return card to hand

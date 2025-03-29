@@ -73,7 +73,11 @@ end
 
 -- Abstract play function that should be overridden by subclasses
 function Card:play(calculator, game)
-    error("Card:play() is abstract and must be implemented by subclasses")
+
+end
+
+function Card:onRoundStart()
+
 end
 
 function Card:draw()

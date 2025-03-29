@@ -55,7 +55,7 @@ function Module:containsPoint(x, y)
            y >= self.y and y < self.y + self.height
 end
 
-function Module:onCardPlayed()
+function Module:onCardPlayed(card)
     -- can be overridden by subclasses
 end
 

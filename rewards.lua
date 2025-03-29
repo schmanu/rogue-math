@@ -21,17 +21,28 @@ function Rewards.new()
     self.rewardCards = {
         "op_div",
         "op_mul",
-        "num_random",
         "op_sub",
+        "op_concat",
+        "op_exp",
+
+        "num_random",
+        "num_0001",
+        "num_100",
+        "num_pow2",
+
+        "mod_prime",
         "mod_double",
         "mod_reverse",
-        "op_exp",
-        "mod_prime",
-        "sp_draw3"
+        "mod_inverse",
+        
+        "sp_draw3",
+
+
     }
 
     self.rewardModules = {
         "infinity",
+        "count",
     }
 
     return self
@@ -88,7 +99,7 @@ function Rewards:generateRewardModules()
         available[i], available[j] = available[j], available[i]
     end 
 
-    -- Take first module
+    -- Take first two module
     self.rewardState.modules = {}
     local moduleWidth = 68
     local moduleHeight = 64
@@ -97,6 +108,10 @@ function Rewards:generateRewardModules()
     
     local moduleId = available[1]
     local module = self.moduleLibrary:createModule(moduleId, startX, 264)
+    table.insert(self.rewardState.modules, module)
+
+    local moduleId = available[2]
+    local module = self.moduleLibrary:createModule(moduleId, startX + moduleWidth + spacing, 264)
     table.insert(self.rewardState.modules, module)
 
 end

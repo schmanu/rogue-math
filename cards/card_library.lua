@@ -5,7 +5,8 @@ local RandomCard = require("cards/random_card")
 local ReverseCard = require("cards/reverse_card")
 local PrimeCard = require("cards/prime_card")
 local Draw3Card = require("cards/draw3_card")
-
+local InverseCard = require("cards/inverse_card")
+local PowerOf2Card = require("cards/pow2_card")
 local CardLibrary = {}
 CardLibrary.__index = CardLibrary
 
@@ -13,6 +14,7 @@ function CardLibrary.new()
     local self = setmetatable({}, CardLibrary)
     self.cardIds = {
         num_0 = "num_0",
+        num_0001 = "num_0001",
         num_1 = "num_1",
         num_2 = "num_2",
         num_3 = "num_3",
@@ -22,15 +24,19 @@ function CardLibrary.new()
         num_7 = "num_7",
         num_8 = "num_8",
         num_9 = "num_9",
+        num_100 = "num_100",
         num_random = "num_random",
+        num_pow2 = "num_pow2",
         op_add = "op_add",
         op_sub = "op_sub",
         op_mul = "op_mul",
         op_div = "op_div",
         op_exp = "op_exp",
+        op_concat = "op_concat",
         mod_reverse = "mod_reverse",
         mod_double = "mod_double",
         mod_prime = "mod_prime",
+        mod_inverse = "mod_inverse",
         sp_draw3 = "sp_draw3",
     }
     self.initialCardIds = {
@@ -52,6 +58,7 @@ function CardLibrary.new()
 end
 
 function CardLibrary:createCard(cardId, x, y) 
+    -- numbers
     if cardId == self.cardIds.num_0 then
         return NumberCard.new(cardId, "0", x, y)
     elseif cardId == self.cardIds.num_1 then
@@ -72,8 +79,16 @@ function CardLibrary:createCard(cardId, x, y)
         return NumberCard.new(cardId, "8", x, y)
     elseif cardId == self.cardIds.num_9 then
         return NumberCard.new(cardId, "9", x, y)
+    elseif cardId == self.cardIds.num_0001 then
+        return NumberCard.new(cardId, "0.001", x, y)
+    elseif cardId == self.cardIds.num_100 then
+        return NumberCard.new(cardId, "100", x, y)
     elseif cardId == self.cardIds.num_random then
         return RandomCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.num_pow2 then
+        return PowerOf2Card.new(cardId, x, y)
+
+    -- operators
     elseif cardId == self.cardIds.op_add then
         return OperatorCard.new(cardId, "+", x, y)
     elseif cardId == self.cardIds.op_sub then
@@ -84,12 +99,20 @@ function CardLibrary:createCard(cardId, x, y)
         return OperatorCard.new(cardId, "/", x, y)
     elseif cardId == self.cardIds.op_exp then
         return OperatorCard.new(cardId, "^", x, y)
+    elseif cardId == self.cardIds.op_concat then
+        return OperatorCard.new(cardId, "⊕", x, y)
+
+    -- modifiers
     elseif cardId == self.cardIds.mod_reverse then
         return ReverseCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_double then
         return DoubleCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_prime then
         return PrimeCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.mod_inverse then
+        return InverseCard.new(cardId, x, y)
+
+    -- special cards
     elseif cardId == self.cardIds.sp_draw3 then
         return Draw3Card.new(cardId, x, y)
     end
