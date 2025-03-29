@@ -23,6 +23,14 @@ function Calculator.new(x, y, game)
         result = 0,
         targetReached = false
     }
+    -- Add rotation state
+    self.rotationState = {
+        currentRotation = 0,
+        targetRotation = 0,
+        animating = false,
+        duration = 0.5,  -- 1 second animation
+        elapsed = 0
+    }
 
     self.modules = {
         slot1 = nil,
@@ -58,27 +66,35 @@ function Calculator:onCardPlayed(card)
 end
 
 function Calculator:draw()
+    -- Save the current graphics state
+    love.graphics.push()
+    
+    -- Move to calculator center for scaling
+    love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
+    -- Scale width based on rotation to create flip effect
+    local scale = math.abs(math.cos(self.rotationState.currentRotation))
+    love.graphics.scale(scale, 1)
+    -- Move back
+    love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
+    
+    -- Draw calculator sprite based on animation progress
+    local sprite = self.flipped and Assets.calculatorSprites.back or Assets.calculatorSprites.front
+    love.graphics.draw(sprite, self.x, self.y, 0)
 
-    -- Draw calculator sprite
-    if self.flipped then
-        love.graphics.draw(Assets.calculatorSprites.back, self.x, self.y, 0)
+    if (self.flipped) then
         -- Draw modules
         if self.modules.slot1 then
             self.modules.slot1:draw()
-        else
-            love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot1.x, self.slots.slot1.y, 0)
-        end
+    else
+        love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot1.x, self.slots.slot1.y, 0)
+    end
 
-        if self.modules.slot2 then
-            self.modules.slot2:draw()
-        else
+    if self.modules.slot2 then
+        self.modules.slot2:draw()
+    else
             love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot2.x, self.slots.slot2.y, 0)
         end
-    else
-        love.graphics.draw(Assets.calculatorSprites.front, self.x, self.y, 0)
     end
-    -- Draw flip button right of it
-    love.graphics.draw(Assets.calculatorSprites.button_flip, self.x + 256, self.y, 0)
 
     -- Draw display text
     if (not self.flipped) then
@@ -86,14 +102,25 @@ function Calculator:draw()
         love.graphics.printf(self.display == "" and "0" or self.display, 
                             420, 96, 180, "right")
     end
+
     
-    -- Draw target number and game mode
+    -- Restore the graphics state
+    love.graphics.pop()
+
+    
+    -- Draw flip button right of it (not affected by rotation)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(Assets.calculatorSprites.button_flip, self.x + 256, self.y, 0)
+
+
+    
+    -- Draw target number and game mode (not affected by rotation)
     love.graphics.setColor(1, 1, 1)
     local modeText = self.game.gameMode == "hit_target" and "Hit:" or "Reach:"
     love.graphics.printf(modeText .. " " .. self.game.targetNumber, 
                         32, 128, 316, "left")
     
-    -- Draw level
+    -- Draw level (not affected by rotation)
     love.graphics.printf("Days:", 
                        32, 128 + 48, 316, "left")
     -- draw level as stripes with every fifth being diagonal
@@ -116,12 +143,10 @@ function Calculator:installModule(module, x, y)
     local slot2_distance = math.sqrt((module_center_x - (self.slots.slot2.x + module.width / 2))^2 + (module_center_y - (self.slots.slot2.y + module.height / 2))^2)
 
     if slot1_distance < slot2_distance then
-        print("Installing module in slot 1")
         self.modules.slot1 = module
         module.x = self.slots.slot1.x
         module.y = self.slots.slot1.y
     else
-        print("Installing module in slot 2")
         self.modules.slot2 = module
         module.x = self.slots.slot2.x
         module.y = self.slots.slot2.y
@@ -139,7 +164,42 @@ function Calculator:flipButtonContainsPoint(x, y)
 end
 
 function Calculator:flip()
-    self.flipped = not self.flipped
+    -- Start rotation animation
+    self.rotationState.animating = true
+    self.rotationState.elapsed = 0
+    
+    -- Toggle between 0 and pi based on current rotation
+    if self.flipped then
+        self.rotationState.targetRotation = 0
+    else
+        self.rotationState.targetRotation = math.pi
+    end
+end
+
+function Calculator:update(dt)
+    -- Update rotation animation
+    if self.rotationState.animating then
+        self.rotationState.elapsed = self.rotationState.elapsed + dt
+        local progress = self.rotationState.elapsed / self.rotationState.duration
+        
+        if progress >= 1 then
+            self.rotationState.currentRotation = self.rotationState.targetRotation
+            self.rotationState.animating = false
+
+        else
+            -- Use smooth easing function
+            progress = 1 - math.cos(progress * math.pi / 2)  -- Ease out
+            
+            -- Interpolate between current and target rotation
+            local startRotation = self.rotationState.targetRotation == 0 and math.pi or 0
+            self.rotationState.currentRotation = startRotation + (self.rotationState.targetRotation - startRotation) * progress
+            
+            -- Set flipped state based on which direction we're rotating
+            if progress >= 0.5 then
+                self.flipped = (self.rotationState.targetRotation == math.pi)
+            end
+        end
+    end
 end
 
 function Calculator:addInput(value)

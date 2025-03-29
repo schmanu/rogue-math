@@ -291,6 +291,9 @@ function love.update(dt)
         card:update(dt)
     end
     
+    -- Update calculator
+    GAME.calculator:update(dt)
+    
     -- Update hover state
     local mx, my = love.mouse.getPosition()
     GAME.hoveredCard = nil
