@@ -23,4 +23,17 @@ function RandomCard:play(calculator)
     return false
 end
 
+function RandomCard:draw()
+    Card.draw(self)
+
+    love.graphics.push()
+    self:translateGraphics()
+
+    love.graphics.setColor(0, 1, 0)
+    if self.valueModifier > 0 then
+        love.graphics.printf("+" .. self.valueModifier, self.drawX + 48, self.drawY + 32, self.width - 48, "left")
+    end
+
+    love.graphics.pop()
+end
 return RandomCard 

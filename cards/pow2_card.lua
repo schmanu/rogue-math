@@ -33,13 +33,11 @@ function PowerOf2Card:draw()
 
 
     love.graphics.push()
-    love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
-    love.graphics.rotate(math.rad(self.rotation or 0))
-    love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
+    self:translateGraphics()
 
     love.graphics.setColor(0, 1, 0)
     if (self.valueModifier > 0) then
-        love.graphics.printf("=" ..currentValue, self.x + 56, self.y + 32, self.width - 56, "left")
+        love.graphics.printf("=" ..currentValue, self.drawX + 56, self.drawY + 32, self.width - 56, "left")
     end
 
     love.graphics.pop()

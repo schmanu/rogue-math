@@ -114,6 +114,7 @@ function Rewards:generateRewardModules()
     local module = self.moduleLibrary:createModule(moduleId, startX + moduleWidth + spacing, 264)
     table.insert(self.rewardState.modules, module)
 
+    self.rewardState.cards = {}
 end
 
 function Rewards:draw()
@@ -149,6 +150,8 @@ function Rewards:handleRewardClick(x, y)
                 GAME:addCardToDrawPile(card.id)
                 GAME:prepareNextLevel()
                 self.rewardState.active = false
+                card:setHovered(false)
+                card:setSelected(false)
                 return true
             end
         end

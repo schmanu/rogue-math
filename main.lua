@@ -99,7 +99,7 @@ function GAME:initializeDeck(seed)
     -- Create a limited number of cards (enough for 2-3 hands)
     for i = 1, #self.cardLibrary.initialCardIds do
         local cardId = self.cardLibrary.initialCardIds[i]
-        table.insert(self.drawPile, self:createCard(cardId, 0, 0)) -- Position will be set by updateHandPosition
+        table.insert(self.drawPile, self:createCard(cardId, GAME.drawPileUI.x, GAME.drawPileUI.y - 200)) -- Position will be set by updateHandPosition
     end
     
     -- Shuffle draw pile
@@ -209,7 +209,7 @@ function GAME:discardSelectedCards()
 end
 
 function GAME:addCardToDrawPile(cardId)
-    table.insert(self.drawPile, self:createCard(cardId, 0, 0))
+    table.insert(self.drawPile, self:createCard(cardId, GAME.drawPileUI.x, GAME.drawPileUI.y - 200))
 end
 
 function GAME:resetGame()
@@ -298,8 +298,10 @@ function love.update(dt)
     for _, card in ipairs(GAME.hand) do
         table.insert(allCards, card)
     end
-    for _, card in ipairs(GAME.game.rewards.rewardState.cards) do
-        table.insert(allCards, card)
+    if (GAME.game.rewards.rewardState.active) then
+        for _, card in ipairs(GAME.game.rewards.rewardState.cards) do
+            table.insert(allCards, card)
+        end
     end
 
     -- combine all possible shown modules: modules in tabs and modules in calculator
@@ -486,10 +488,12 @@ function love.mousereleased(x, y, button)
                     table.insert(GAME.discardPile, GAME.draggedElement)
                     -- Remove card from hand
                     GAME:removeCard(GAME.draggedElement)
-
                     -- trigger onCardPlayed on calculator
                     print("onCardPlayed " .. GAME.draggedElement.id)
                     GAME.calculator:onCardPlayed(GAME.draggedElement)
+                    
+                    GAME.draggedElement.drawX = GAME.drawPileUI.x
+                    GAME.draggedElement.drawY = GAME.drawPileUI.y - 200
                 end
             elseif GAME.draggedElement.objectName == "Module" then
                 -- add to calculator

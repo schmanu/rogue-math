@@ -27,13 +27,11 @@ function NumberCard:draw()
     Card.draw(self)
 
     love.graphics.push()
-    love.graphics.translate(self.x + self.width/2, self.y + self.height/2)
-    love.graphics.rotate(math.rad(self.rotation or 0))
-    love.graphics.translate(-(self.x + self.width/2), -(self.y + self.height/2))
+    self:translateGraphics()
 
     love.graphics.setColor(0, 1, 0)
     if (self.valueModifier > 0) then
-        love.graphics.printf("+" ..self.valueModifier, self.x + 48, self.y + 32, self.width - 48, "left")
+        love.graphics.printf("+" ..self.valueModifier, self.drawX + 48, self.drawY + 32, self.width - 48, "left")
     end
 
     love.graphics.pop()
