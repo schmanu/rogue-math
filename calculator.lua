@@ -306,23 +306,13 @@ end
 function Calculator:calculateResult(value)
     -- Simple evaluation for now
     local result = 0
-    local currentNumber = ""
     local currentOperator = self.currentOperation
-    
-    for i = 1, #self.display do
-        local char = self.display:sub(i,i)
-        if char:match("%d") then
-            currentNumber = currentNumber .. char
-        end
-    end
 
     if currentOperator == nil then
-        return currentNumber
+        return self.currentValue
     end
     
-    if currentNumber ~= "" then
-        result = currentOperator(tonumber(currentNumber), value)
-    end
+    result = currentOperator(self.currentValue, value)
     
     return result
 end

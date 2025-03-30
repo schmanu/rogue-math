@@ -27,7 +27,7 @@ function BalanceModule:onStartOfTurn()
         -- Get all number cards from CardLibrary
         local numCards = {}
         for id, _ in pairs(GAME.cardLibrary.cardIds) do
-            if id:sub(1,4) == "num_" then
+            if id:sub(1,4) == "num_" and id ~= "num_load" then
                 table.insert(numCards, id)
             end
         end

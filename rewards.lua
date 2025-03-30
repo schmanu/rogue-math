@@ -35,6 +35,7 @@ function Rewards.new()
         "mod_double",
         "mod_reverse",
         "mod_inverse",
+        "mod_store",
         
         "sp_draw3",
 

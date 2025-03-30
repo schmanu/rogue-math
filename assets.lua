@@ -84,6 +84,7 @@ function Assets.load()
     Assets.cardSprites["num_0.001"] = love.graphics.newImage("sprites/cards/num_0001.png")
     Assets.cardSprites["num_100"] = love.graphics.newImage("sprites/cards/num_100.png")
     Assets.cardSprites["num_pow2"] = love.graphics.newImage("sprites/cards/num_pow2.png")
+    Assets.cardSprites["num_load"] = love.graphics.newImage("sprites/cards/num_load.png")
 
     -- Load operator sprites
     Assets.cardSprites["op_plus"] = love.graphics.newImage("sprites/cards/op_plus.png")
@@ -98,6 +99,7 @@ function Assets.load()
     Assets.cardSprites["mod_reverse"] = love.graphics.newImage("sprites/cards/mod_reverse.png")
     Assets.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")
     Assets.cardSprites["mod_inverse"] = love.graphics.newImage("sprites/cards/mod_inverse.png")
+    Assets.cardSprites["mod_store"] = love.graphics.newImage("sprites/cards/mod_store.png")
 
     -- Special cards
     Assets.cardSprites["sp_draw3"] = love.graphics.newImage("sprites/cards/sp_draw3.png")

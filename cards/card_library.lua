@@ -8,6 +8,8 @@ local Draw3Card = require("cards/draw3_card")
 local InverseCard = require("cards/inverse_card")
 local PowerOf2Card = require("cards/pow2_card")
 local PlusOneCard = require("cards/operator_plus1")
+local StoreCard = require("cards/store_card")
+
 local CardLibrary = {}
 CardLibrary.__index = CardLibrary
 
@@ -28,6 +30,7 @@ function CardLibrary.new()
         num_100 = "num_100",
         num_random = "num_random",
         num_pow2 = "num_pow2",
+        num_load = "num_load",
         op_add = "op_add",
         op_sub = "op_sub",
         op_mul = "op_mul",
@@ -39,6 +42,7 @@ function CardLibrary.new()
         mod_double = "mod_double",
         mod_prime = "mod_prime",
         mod_inverse = "mod_inverse",
+        mod_store = "mod_store",
         sp_draw3 = "sp_draw3",
     }
     self.initialCardIds = {
@@ -106,7 +110,6 @@ function CardLibrary:createCard(cardId, x, y)
     elseif cardId == self.cardIds.op_plus1 then
         return PlusOneCard.new(cardId, x, y)
 
-
     -- modifiers
     elseif cardId == self.cardIds.mod_reverse then
         return ReverseCard.new(cardId, x, y)
@@ -116,6 +119,9 @@ function CardLibrary:createCard(cardId, x, y)
         return PrimeCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_inverse then
         return InverseCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.mod_store then
+        return StoreCard.new(cardId, x, y)
+
 
     -- special cards
     elseif cardId == self.cardIds.sp_draw3 then

@@ -67,7 +67,6 @@ function Card:update(dt)
         
         -- Tilt negative if target is to the right, positive if to the left
         local tiltDirection = (dx < 0) and -1 or 1
-        if dx ~= 0 then print(dx) end
         self.hoverAnimation.rotation = maxTilt * tiltFactor * tiltDirection
     end
 

@@ -99,7 +99,7 @@ function Grade:draw()
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(Assets.gradeSprite, self.x + 56, self.y, 0)
     love.graphics.setColor(1, 0, 0.301)
-    love.graphics.printf(self.gradeLabels[self.grade], self.x + 56 + 56, self.y + 132, 56, "center")
+    love.graphics.printf(self.gradeLabels[self.grade], self.x + 56 + 48, self.y + 132, 56, "center")
     
     
     love.graphics.setColor(1, 1, 1)
