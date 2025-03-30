@@ -6,6 +6,7 @@ function LoadCard.new(id, x, y, value)
     local self = setmetatable(Card.new(id, x, y, "num_load", "number"), LoadCard)
     self.type = "number"
     self.value = value
+    self.valueModifier = 0
     self.tooltip = "Load Card\n\nTypes " .. self.value .. " into the calculator."
     self:setTemporary(true)
     return self

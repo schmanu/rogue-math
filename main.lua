@@ -234,12 +234,16 @@ function GAME:prepareNextLevel()
     
     -- Combine draw, discard piles and hand
     for _, card in ipairs(GAME.discardPile) do
-        card:setSelected(false)
-        table.insert(GAME.drawPile, card)
+        if not card:isTemporary() then
+            card:setSelected(false)
+            table.insert(GAME.drawPile, card)
+        end
     end
     for _, card in ipairs(GAME.hand) do
-        card:setSelected(false)
-        table.insert(GAME.drawPile, card)
+        if not card:isTemporary() then
+            card:setSelected(false)
+            table.insert(GAME.drawPile, card)
+        end
     end
     GAME.discardPile = {}  -- Clear discard pile
     
