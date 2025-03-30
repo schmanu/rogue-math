@@ -6,7 +6,7 @@ HitTheNumber.__index = HitTheNumber
 function HitTheNumber.new()
     local self = setmetatable(Modifier.new(), HitTheNumber)
     self.name = "Hit the Number"
-    self.description = "Must reach exactly. Overshooting reduces grade."
+    self.description = "Must reach exactly.\nOverscoring reduces grade."
     return self
 end
 
@@ -15,10 +15,7 @@ function HitTheNumber:onDayStart()
 end
 
 function HitTheNumber:evaluate(game, result)
-    if result ~= GAME.state.targetNumber then
-        local diff = math.abs(result - GAME.state.targetNumber)
-        GAME.grade:decreaseGrade(diff)
-    end
+    -- this must be handles specifically in the game.lua
 end
 
 return HitTheNumber 

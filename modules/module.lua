@@ -76,6 +76,11 @@ function Module:onCardPlayed(card)
     -- can be overridden by subclasses
 end
 
+-- Called when turn starts. After setting everything up.
+function Module:onStartOfTurn()
+    -- can be overridden by subclasses
+end
+
 function Module:draw()
     -- Draw card sprite
     love.graphics.setColor(1, 1, 1)
@@ -94,7 +99,7 @@ function Module:draw()
             love.graphics.setColor(0, 0, 0, 0.8)
             local padding = 16
             local tooltipWidth = love.graphics.getFont():getWidth(self.tooltip) + padding * 2
-            local tooltipHeight = love.graphics.getFont():getHeight() * 3 + padding
+            local tooltipHeight = love.graphics.getFont():getHeight() * 4 + padding
             
             -- Get screen dimensions
             local screenWidth = love.graphics.getWidth()

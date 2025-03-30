@@ -23,7 +23,7 @@ function Game:initializeLevel()
     if GAME.state.level % 5 == 0 then
         -- Select a random modifier
         local modifierKeys = {
-            "HitTheNumber",
+            --"HitTheNumber", Disable for now as its not working
             "DividableBy",
             "NoDiscards",
             "DecreasedHand",
@@ -88,6 +88,10 @@ function Game:calculateGradeProgress(argResult)
     local gradeStepSize = GAME.state.targetNumber / 16
     local currentGrade = math.floor((result / GAME.state.targetNumber) * 16)
     local grade_diff = math.floor((1 - (result / GAME.state.targetNumber)) * -16)
+
+    if self.modifiers["HitTheNumber"] then
+        grade_diff = grade_diff * -1
+    end
 
     if (grade_diff < 0) then
         local predictedGrade = GAME.game.grade.grade + grade_diff

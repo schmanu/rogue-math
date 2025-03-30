@@ -192,7 +192,9 @@ function GAME:discardSelectedCards()
     for i = #self.hand, 1, -1 do
         if self.hand[i]:isSelected() then
             -- Add card to discard pile before removing from hand
-            table.insert(self.discardPile, self.hand[i])
+            if (not self.hand[i]:isTemporary()) then
+                table.insert(self.discardPile, self.hand[i])
+            end
             table.remove(self.hand, i)
             selectedCount = selectedCount + 1
         end
@@ -232,9 +234,11 @@ function GAME:prepareNextLevel()
     
     -- Combine draw, discard piles and hand
     for _, card in ipairs(GAME.discardPile) do
+        card:setSelected(false)
         table.insert(GAME.drawPile, card)
     end
     for _, card in ipairs(GAME.hand) do
+        card:setSelected(false)
         table.insert(GAME.drawPile, card)
     end
     GAME.discardPile = {}  -- Clear discard pile
@@ -254,10 +258,13 @@ function GAME:prepareNextLevel()
         if #GAME.drawPile > 0 then
             local card = table.remove(GAME.drawPile)
             -- unselect card
-            card:setSelected(false)
             table.insert(GAME.hand, card)
         end
     end
+
+    -- Apply modules that trigger on round start
+    if GAME.calculator.modules.slot1 then GAME.calculator.modules.slot1:onStartOfTurn() end
+    if GAME.calculator.modules.slot2 then GAME.calculator.modules.slot2:onStartOfTurn() end
 
     GAME:updateHandPosition()
 
@@ -266,7 +273,6 @@ function GAME:prepareNextLevel()
 end
 
 function love.load()
-    print("Test: " .. loadstring("return 4 * (1 .. 0)")())
     -- Load pixel font
     local pixelFont = love.graphics.newFont("sprites/PixelFont.ttf", 16)
     love.graphics.setFont(pixelFont)
@@ -285,10 +291,11 @@ function love.load()
     -- Set parent references for UI elements
     GAME.drawPileUI.parent = GAME
     
+    GAME.game:initializeLevel()
+
     -- Initialize deck and hand
     GAME:initializeDeck()
 
-    GAME.game:initializeLevel()
     
     -- Load assets
     Assets.load()
@@ -500,7 +507,9 @@ function love.mousereleased(x, y, button)
                     -- Record that a card was played
                     GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
                     -- Add card to discard pile before removing from hand
-                    table.insert(GAME.discardPile, GAME.draggedElement)
+                    if (not GAME.draggedElement:isTemporary()) then
+                        table.insert(GAME.discardPile, GAME.draggedElement)
+                    end
                     -- Remove card from hand
                     GAME:removeCard(GAME.draggedElement)
                     -- trigger onCardPlayed on calculator

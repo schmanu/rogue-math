@@ -24,6 +24,7 @@ function Rewards.new()
         "op_sub",
         "op_concat",
         "op_exp",
+        "op_plus1",
 
         "num_random",
         "num_0001",
@@ -43,6 +44,7 @@ function Rewards.new()
     self.rewardModules = {
         "infinity",
         "count",
+        "balance",
     }
 
     return self

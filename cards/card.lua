@@ -23,6 +23,8 @@ function Card.new(id, x, y, sprite, type)
     self.type = type
     self.objectName = "Card"
     self.tooltip = ""
+    self.temporary = false
+
     -- Add animation state
     self.hoverAnimation = {
         rotation = 0,
@@ -40,6 +42,14 @@ function Card.new(id, x, y, sprite, type)
         velocity = 0,
     }
     return self
+end
+
+function Card:setTemporary(temporary)
+    self.temporary = temporary
+end
+
+function Card:isTemporary()
+    return self.temporary
 end
 
 
@@ -248,6 +258,12 @@ function Card:draw()
             borderColor = {1, 1, 1}  -- White border for normal cards
         end
 
+        if self.temporary then
+            Shaders.cardShader:send("modifierColor", {0.16, 0.67, 1, 0.66})
+        else
+            Shaders.cardShader:send("modifierColor", {1, 1, 1, 1})
+        end
+
         Shaders.cardShader:send("borderColor", borderColor)
         -- Draw sprite scaled up by 2
         love.graphics.draw(sprite, self.drawX, self.drawY, 0, scale, scale)
@@ -286,6 +302,13 @@ function Card:draw()
             love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipWidth, tooltipHeight)
             love.graphics.setColor(1, 1, 1)
             love.graphics.print(self.tooltip, tooltipX + padding, tooltipY + padding/2)
+            if self.temporary then
+                local labelWidth = love.graphics.getFont():getWidth("Temporary")
+                love.graphics.setColor(0.16, 0.67, 1)
+                love.graphics.print("Temporary", tooltipX + tooltipWidth - (labelWidth + padding), tooltipY + padding/2)
+                love.graphics.setColor(1,1,1)
+            end
+
         end
     end
 end

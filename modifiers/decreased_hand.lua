@@ -5,17 +5,17 @@ DecreasedHand.__index = DecreasedHand
 
 function DecreasedHand.new()
     local self = setmetatable(Modifier.new(), DecreasedHand)
-    self.name = "Decreased Hand"
+    self.name = "Smol hands"
     self.description = "Hand size reduced by 1."
     return self
 end
 
 function DecreasedHand:onDayStart()
-    -- Note: Hand size reduction should be handled by the hand manager
+    GAME.state.handSize = GAME.state.handSize - 1
 end
 
 function DecreasedHand:evaluate(game, result)
-    -- No evaluation needed
+    -- No evaluation neede
 end
 
 return DecreasedHand 
