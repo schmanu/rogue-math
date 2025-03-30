@@ -324,6 +324,11 @@ function love.update(dt)
             table.insert(allModules, GAME.calculator.modules.slot2)
         end
     end
+    if (GAME.game.rewards.rewardState.active) then
+        for _, module in ipairs(GAME.game.rewards.rewardState.modules) do
+            table.insert(allModules, module)
+        end
+    end
 
     -- Update all cards (hand and rewards) in reverse order
     for _, card in ipairs(allCards) do
