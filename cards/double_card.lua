@@ -19,7 +19,7 @@ function DoubleCard:play(calculator)
             if num then
                 -- Clear the display and add the doubled value
                 calculator:clear()
-                calculator:addInput(tostring(num * 2))
+                calculator:addInput(num * 2)
                 return true
             end
         end

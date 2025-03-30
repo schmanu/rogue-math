@@ -17,7 +17,7 @@ end
 function RandomCard:play(calculator)
     if not self.disabled then
         local randomValue = math.random(0, 17)
-        calculator:addInput(tostring(randomValue + self.valueModifier))
+        calculator:addInput(randomValue + self.valueModifier)
         return true
     end
     return false

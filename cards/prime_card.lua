@@ -31,7 +31,7 @@ function PrimeCard:play(calculator)
                     nextNum = nextNum + 1
                 end
                 calculator:clear()
-                calculator:addInput(tostring(nextNum))
+                calculator:addInput(nextNum)
                 return true
             end
         end

@@ -19,7 +19,7 @@ function ReverseCard:play(calculator)
             -- Convert to number
             -- Clear the display and add the reversed value
             calculator:clear()
-            calculator:addInput(reversed)
+            calculator:addInput(tonumber(reversed))
             return true
         end
     end

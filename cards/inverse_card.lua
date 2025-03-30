@@ -19,7 +19,7 @@ function InverseCard:play(calculator)
             if num then
                 -- Clear the display and add the doubled value
                 calculator:clear()
-                calculator:addInput(tostring(1 / num))
+                calculator:addInput(1 / num)
                 return true
             end
         end

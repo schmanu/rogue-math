@@ -50,7 +50,7 @@ end
 
 function Rewards:prepareRewards()
     -- Every 5th level gets a module, otherwise cards
-    if GAME.game.level % 5 == 0 then
+    if GAME.state.level % 5 == 0 then
         self.rewardState.rewardType = "modules"
         self:generateRewardModules()
     else
@@ -148,10 +148,10 @@ function Rewards:handleRewardClick(x, y)
         for i, card in ipairs(self.rewardState.cards) do
             if card:containsPoint(x, y) then
                 GAME:addCardToDrawPile(card.id)
-                GAME:prepareNextLevel()
                 self.rewardState.active = false
                 card:setHovered(false)
                 card:setSelected(false)
+                GAME:prepareNextLevel()
                 return true
             end
         end
@@ -159,8 +159,8 @@ function Rewards:handleRewardClick(x, y)
         for i, module in ipairs(self.rewardState.modules) do
             if module:containsPoint(x, y) then
                 GAME.game.tabs:addModule(module)
-                GAME:prepareNextLevel()
                 self.rewardState.active = false
+                GAME:prepareNextLevel()
                 return true
             end
         end

@@ -1,67 +1,164 @@
 local Grade = require("grade")
 local Rewards = require("rewards")
 local Tabs = require("tabs")
+local Modifiers = require("modifiers")
 
 local Game = {}
 Game.__index = Game
 
 function Game.new()
     local self = setmetatable({}, Game)
-    self.level = 1
-    self.gameMode = nil
-    self.grade = Grade.new(832, 64)
-    self.targetNumber = 0
-    self.discards = 1
-    self.gameState = "playing"
+    self.grade = Grade.new(732, 64)
     self.rewards = Rewards.new()
     self.tabs = Tabs.new(992, 128)
+    self.modifiers = {}
     return self
 end
 
 function Game:initializeLevel()
-    -- Randomly select game mode
-    self.gameMode = "reach_target"
+    -- Clear previous modifiers
+    self.modifiers = {}
     
-    -- Calculate target number based on game mode
-    self.targetNumber = self:calculateTargetNumber()
+    -- Check if this is a boss level (every 5th level)
+    if GAME.state.level % 5 == 0 then
+        -- Select a random modifier
+        local modifierKeys = {
+            "HitTheNumber",
+            "DividableBy",
+            "NoDiscards",
+            "DecreasedHand",
+            "BigNumbers"
+        }
+        local randomModifier = modifierKeys[math.random(#modifierKeys)]
+        local modifier = Modifiers[randomModifier].new()
 
-    if (self.gameMode == "hit_target") then
-        self.discards = 2
-    else
-        self.discards = 1
+        -- Store the modifier instance
+        self.modifiers[modifier.name] = modifier
     end
+    
+    -- Calculate target number
+    GAME.state.targetNumber = self:calculateTargetNumber()
+    
+    GAME.state.gameState = "playing"
+    self.grade:nextRound()
 
-    self.gameState = "playing"
+    -- apply modifiers  
+    for _, modifier in pairs(self.modifiers) do
+        modifier:onDayStart()
+    end
+end
+
+function Game:calculateTargetNumber()
+    -- Always use Fibonacci sequence for target
+    local fib = 5
+    local prev = 3
+    for i = 1, GAME.state.level do
+        local temp = fib
+        fib = fib + prev
+        prev = temp
+    end
+    return fib
+end
+
+function Game:calculateGradeDiff(argResult)
+    local result = argResult or GAME.calculator:getResult()
+    -- Check if target is reached based on game mode
+    local targetReached = false
+    local health_diff = 0
+    targetReached = result >= GAME.state.targetNumber
+    if targetReached then
+        -- reaching exactly the target gives 1 health
+        if result == GAME.state.targetNumber then
+                health_diff = 1
+        else
+            -- for every time the target was overshot, add 1 health
+            health_diff = math.floor((result / GAME.state.targetNumber)) - 1
+        end
+
+
+    else
+        -- lose lives based on how much percent was reached
+        health_diff = math.floor((1 - (result / GAME.state.targetNumber)) * -16)
+    end
+    return health_diff
+end
+
+function Game:calculateGradeProgress(argResult)
+    local result = argResult or GAME.calculator:getResult()
+    local gradeStepSize = GAME.state.targetNumber / 16
+    local currentGrade = math.floor((result / GAME.state.targetNumber) * 16)
+    local grade_diff = math.floor((1 - (result / GAME.state.targetNumber)) * -16)
+
+    if (grade_diff < 0) then
+        local predictedGrade = GAME.game.grade.grade + grade_diff
+        local stepsRequired = 1
+        if predictedGrade < 1 then
+            stepsRequired = 2 - predictedGrade
+            currentGrade = 0
+        end
+
+        local previousGradePoints = currentGrade * gradeStepSize
+        local progress = (result - previousGradePoints) / (gradeStepSize * stepsRequired)
+        return progress
+    else
+        local overshotBy = result - GAME.state.targetNumber
+        local stepSize = GAME.state.targetNumber
+
+        local increase = math.floor(overshotBy / stepSize)
+        if GAME.game.grade.grade + increase > 16 then
+            return 1
+        else
+            return (overshotBy % stepSize) / stepSize
+        end
+    end
+end
+
+function Game:onTurnEnd()
+    if not GAME.state.gameState == "playing" then return end
+    
+    -- apply health diff
+    local health_diff = self:calculateGradeDiff()
+    self.grade:updateGrade(health_diff)
+    
+    if self.grade.grade > 1 then
+        -- Level complete
+        GAME.state.gameState = "levelComplete"
+        GAME.game:startRewardState()
+    else
+        -- Game over
+        GAME.state.gameState = "gameOver"
+    end
+end
+
+function Game:evaluateResult(result)
+    -- Apply all active modifiers
+    for _, modifier in pairs(self.modifiers) do
+        modifier:evaluate(self, result)
+    end
+end
+
+function Game:getActiveModifiers()
+    local activeModifiers = {}
+    for _, modifier in pairs(self.modifiers) do
+        table.insert(activeModifiers, {
+            name = modifier.name,
+            description = modifier:getDescription(self)
+        })
+    end
+    return activeModifiers
 end
 
 function Game:startNextLevel()
     -- Increment level and initialize new level
-    self.level = self.level + 1
+    GAME.state.level = GAME.state.level + 1
+    GAME.state.handSize = 5
+    GAME.state.discards = 1
     self:initializeLevel()
-end
-
-function Game:calculateTargetNumber()
-    if self.gameMode == "hit_target" then
-        -- Mode 1: Random number between 1 and level * 8
-        return math.random(1, self.level * 8)
-    elseif self.gameMode == "reach_target" then
-        -- Mode 2: Fibonacci number
-        local fib = 5
-        local prev = 3
-        for i = 1, self.level do
-            local temp = fib
-            fib = fib + prev
-            prev = temp
-        end
-        return fib
-    end
 end
 
 function Game:startRewardState()
     self.rewards:prepareRewards()
 end
-
-
 
 function Game:handleRewardClick(x, y)
     if not self.rewardState.active then return false end
@@ -85,20 +182,23 @@ function Game:handleRewardClick(x, y)
     return false
 end
 
+function Game:update(dt)
+    self.grade:update(dt)
+end
+
 function Game:reset()
-    self.level = 1
-    self.gameMode = nil
+    GAME.state.level = 1
     self.targetNumber = 0
     self.rewardState.active = false
     self.rewardState.cards = {}
     self.rewardState.selectedCard = nil
-    self.gameState = "playing"
+    GAME.state.gameState = "playing"
 end
 
 function Game:draw()
     self.grade:draw()
 
-    if self.gameState == "levelComplete" then
+    if GAME.state.gameState == "levelComplete" then
         self.rewards:draw()
     end
 

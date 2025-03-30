@@ -16,6 +16,13 @@ GAME = {
             cardsPlayed = 0,
         },
     },
+    state = {
+        gameState = "playing",
+        discards = 1,
+        handSize = 5,
+        targetNumber = 0,
+        level = 1,
+    },
     uiState = {
         hoveredElement = nil,
     },
@@ -110,7 +117,7 @@ function GAME:initializeDeck(seed)
     
     -- Clear and redraw hand (limited to 5 cards)
     self.hand = {}
-    for i = 1, 5 do
+    for i = 1, GAME.state.handSize do
         if #self.drawPile > 0 then
             local card = table.remove(self.drawPile)
             table.insert(self.hand, card)
@@ -201,9 +208,9 @@ function GAME:discardSelectedCards()
         self:drawNewCards(selectedCount)
         
         -- Decrease discards
-        self.game.discards = self.game.discards - 1
-        if (self.game.discards == 0) then
-            self.discardButton.enabled = false
+        GAME.state.discards = GAME.state.discards - 1
+        if (GAME.state.discards == 0) then
+            GAME.discardButton.enabled = false
         end
     end
 end
@@ -243,7 +250,7 @@ function GAME:prepareNextLevel()
     -- Draw new hand
     GAME.hand = {}
 
-    for i = 1, 5 do
+    for i = 1, GAME.state.handSize do
         if #GAME.drawPile > 0 then
             local card = table.remove(GAME.drawPile)
             -- unselect card
@@ -331,6 +338,9 @@ function love.update(dt)
     -- Update calculator
     GAME.calculator:update(dt)
 
+    -- Update game
+    GAME.game:update(dt)
+
     -- Update tabs
     GAME.game.tabs:update(dt)
     
@@ -340,7 +350,7 @@ function love.update(dt)
     
     -- Update card disabled state based on calculator state
     for _, card in ipairs(GAME.hand) do
-        if GAME.game.gameState == "playing" then
+        if GAME.state.gameState == "playing" then
             -- Disable cards based on expected input type
             if GAME.calculator:getExpectedInputType() == "number" then
                 card:setDisabled(card.type == "operator" or card.type == "modifier")
@@ -355,13 +365,13 @@ function love.update(dt)
 end
 
 function love.draw()
-    if GAME.game.gameState == "gameOver" then
+    if GAME.state.gameState == "gameOver" then
         love.graphics.draw(Assets.gameOverSprite, 0, 0)
         love.graphics.setColor(0,0,0,0.5)
         love.graphics.rectangle("fill", 32, love.graphics.getHeight() / 2 - 32, love.graphics.getWidth() - 64, 196)
         love.graphics.setColor(1, 1, 1)
         love.graphics.printf("You were sent to boarding school due to your bad grades.", 0, love.graphics.getHeight() / 2, love.graphics.getWidth(), "center")
-        love.graphics.printf("Days Survived: " .. GAME.game.level, 0, love.graphics.getHeight() / 2 + 64, love.graphics.getWidth(), "center")
+        love.graphics.printf("Days Survived: " .. GAME.state.level - 1, 0, love.graphics.getHeight() / 2 + 64, love.graphics.getWidth(), "center")
         love.graphics.printf("Press R to restart", 0, love.graphics.getHeight() / 2 + 96, love.graphics.getWidth(), "center")
         return
     end
@@ -399,7 +409,7 @@ function love.draw()
     
     -- Draw discard button
     GAME.discardButton:draw()
-    love.graphics.printf("(" .. GAME.game.discards .. ")", GAME.discardButton.x + GAME.discardButton.width + 8, GAME.discardButton.y + GAME.discardButton.height / 2 - 8, 64, "left")
+    love.graphics.printf("(" .. GAME.state.discards .. ")", GAME.discardButton.x + GAME.discardButton.width + 8, GAME.discardButton.y + GAME.discardButton.height / 2 - 8, 64, "left")
     
     -- Draw seed (for debugging)
     love.graphics.setColor(0.5, 0.5, 0.5)
@@ -422,12 +432,12 @@ function love.mousepressed(x, y, button)
     if button == 1 then  -- Left click
         -- Check if clicking end turn button
         if GAME.endTurnButton:containsPoint(x, y) then
-            GAME.calculator:endTurn()
+            GAME.game:onTurnEnd()
             return
         end
         
         -- Check if clicking discard button
-        if GAME.game.discards > 0 and GAME.discardButton:containsPoint(x, y) then
+        if GAME.state.discards > 0 and GAME.discardButton:containsPoint(x, y) then
             GAME:discardSelectedCards()
             return
         end

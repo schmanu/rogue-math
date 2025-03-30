@@ -17,7 +17,7 @@ end
 function NumberCard:play(calculator)
     if not self.disabled then
         local result = tonumber(self.value) + tonumber(self.valueModifier)
-        calculator:addInput(tostring(result))
+        calculator:addInput(result)
         return true
     end
     return false

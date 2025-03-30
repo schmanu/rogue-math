@@ -85,13 +85,13 @@ function Calculator:draw()
         -- Draw modules
         if self.modules.slot1 then
             self.modules.slot1:draw()
-    else
-        love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot1.x, self.slots.slot1.y, 0)
-    end
+        else
+            love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot1.x, self.slots.slot1.y, 0)
+        end
 
-    if self.modules.slot2 then
-        self.modules.slot2:draw()
-    else
+        if self.modules.slot2 then
+            self.modules.slot2:draw()
+        else
             love.graphics.draw(Assets.calculatorSprites.modules.empty, self.slots.slot2.x, self.slots.slot2.y, 0)
         end
     end
@@ -103,21 +103,32 @@ function Calculator:draw()
                             420, 96, 180, "right")
     end
 
-    
     -- Restore the graphics state
     love.graphics.pop()
 
-    
     -- Draw flip button right of it (not affected by rotation)
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(Assets.calculatorSprites.button_flip, self.x + 256, self.y, 0)
 
 
+    local activeModifiers = self.game:getActiveModifiers()
     
-    -- Draw target number and game mode (not affected by rotation)
+    -- Draw "Exam Day" label
+    if GAME.state.level % 5 == 0 then
+        love.graphics.setColor(1, 0.8, 0)  -- Gold color for exam day
+        love.graphics.printf("Exam Day:", 32, 128 - 56, 316, "left")
+    end
+    
+    -- Draw each modifier
+    for _, modifier in ipairs(activeModifiers) do
+        love.graphics.setColor(1, 0, 0.3)
+        love.graphics.printf(modifier.name, 32, 128 - 32, 316, "left")
+    end
+
+
+    -- Draw target number (not affected by rotation)
     love.graphics.setColor(1, 1, 1)
-    local modeText = self.game.gameMode == "hit_target" and "Hit:" or "Reach:"
-    love.graphics.printf(modeText .. " " .. self.game.targetNumber, 
+    love.graphics.printf("Reach: " .. GAME.state.targetNumber, 
                         32, 128, 316, "left")
     
     -- Draw level (not affected by rotation)
@@ -125,11 +136,47 @@ function Calculator:draw()
                        32, 128 + 48, 316, "left")
     -- draw level as stripes with every fifth being diagonal
     local diagonal_overlap = 4
-    for i = 1, self.game.level do
+    for i = 1, GAME.state.level do
         if i % 5 == 0 then
             love.graphics.line(32 + (i-1) * 12 - 48 - diagonal_overlap, 128 + 80, 32 + (i-2) * 12 + diagonal_overlap, 128 + 80 + 16)
         else
             love.graphics.rectangle("fill", 32 + (i-1) * 12, 128 + 80, 2, 16)
+        end
+    end
+
+    -- Draw modifier tooltips if hovering
+    if next(self.game.modifiers) then
+        local activeModifiers = self.game:getActiveModifiers()
+        local y = 128 - 56
+        local x = 32
+        
+        -- Check if mouse is over modifier area
+        local mx, my = love.mouse.getPosition()
+        if my >= y and my <= y + 32 then
+            for _, modifier in ipairs(activeModifiers) do
+                local modifierWidth = love.graphics.getFont():getWidth(modifier.name)
+                if mx >= x and mx <= x + modifierWidth then
+                    -- Draw tooltip
+                    love.graphics.setColor(0, 0, 0, 0.8)
+                    local padding = 16
+                    local tooltipWidth = love.graphics.getFont():getWidth(modifier.description) + padding * 2
+                    local tooltipHeight = love.graphics.getFont():getHeight() + padding * 2
+                    
+                    local tooltipX = x
+                    local tooltipY = y + 25
+                    
+                    -- Adjust position if tooltip would go off screen
+                    if tooltipX + tooltipWidth > love.graphics.getWidth() then
+                        tooltipX = love.graphics.getWidth() - tooltipWidth
+                    end
+                    
+                    love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipWidth, tooltipHeight)
+                    love.graphics.setColor(1, 1, 1)
+                    love.graphics.print(modifier.description, tooltipX + padding, tooltipY + padding)
+                    break
+                end
+                x = x + 120
+            end
         end
     end
 end
@@ -203,16 +250,18 @@ function Calculator:update(dt)
 end
 
 function Calculator:addInput(value)
-    if self.game.gameState == "playing" then
+    if GAME.state.gameState == "playing" then
         local result = 0
         -- If display is empty, only allow numbers
         if self.display == "" then
-            result = tonumber(value)
+            result = value
         else
             -- Calculate and show intermediary result
-            result = self:calculateResult(tonumber(value))
+            result = self:calculateResult(value)
             self.currentOperation = nil
         end
+
+        self.currentValue = result
 
         -- format display such that it fits (8 characters to fit the next operator)
         local display_length = 8
@@ -231,62 +280,16 @@ function Calculator:clear()
     self:setExpectedInputType("number")  -- Reset to expect number after clear
 end
 
-function Calculator:evaluate()
-    if self.display == "" then return end
-    
+function Calculator:getResult()
     -- Calculate final result from display
     local result = 0
     local currentNumber = ""
     local currentOperator = nil
     
-    result = tonumber(self.display)
-    
-    -- Check if target is reached based on game mode
-    local targetReached = false
-    local health_diff = 0
-    if self.game.gameMode == "hit_target" then
-        targetReached = result == self.game.targetNumber
-        health_diff = -1 * math.abs(result - self.game.targetNumber)
-        -- hitting exactly the target gives 1 health
-        if health_diff == 0 then
-            health_diff = 1
-        end
-    else  -- reach_target mode
-        targetReached = result >= self.game.targetNumber
-        if targetReached then
-            -- reaching exactly the target gives 1 health
-            if result == self.game.targetNumber then
-                health_diff = 1
-            else
-            -- when overshooting one health per times overshot
-                health_diff = math.floor(result / self.game.targetNumber) - 1
-            end
-        else
-            -- lose lives based on how much percent was reached
-            health_diff = math.floor((1 - (result / self.game.targetNumber)) * -13)
-        end
-    end
+    result = self.currentValue
 
-    -- apply health diff
-    self.game.grade:update(health_diff)
-    
-    -- Set up animation state
-    self.animationState = {
-        active = true,
-        currentStep = 0,
-        totalSteps = 60,
-        result = result,
-        targetReached = targetReached
-    }
-    
-    if self.game.grade.grade > 1 then
-        -- Level complete
-        self.game.gameState = "levelComplete"
-        self.game:startRewardState()
-    else
-        -- Game over
-        self.game.gameState = "gameOver"
-    end
+    return result
+ 
 end
 
 function Calculator:setOperatorMode(operation, symbol)
@@ -314,7 +317,7 @@ function Calculator:calculateResult(value)
     end
 
     if currentOperator == nil then
-        return value
+        return currentNumber
     end
     
     if currentNumber ~= "" then
@@ -324,16 +327,8 @@ function Calculator:calculateResult(value)
     return result
 end
 
-function Calculator:endTurn()
-    if self.game.gameState == "playing" then
-        self:evaluate()
-    end
-    self.game.canDiscard = true  -- Reset discard ability
-end
-
 function Calculator:reset()
     self.display = ""
-    self.game.gameState = "playing"
     self.currentValue = 0
     self.currentOperation = nil
     self.operatorMode = nil

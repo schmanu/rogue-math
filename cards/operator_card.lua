@@ -37,7 +37,7 @@ function OperatorCard:play(calculator)
             elseif self.value == "^" then
                 return firstValue ^ secondValue
             elseif self.value == "⊕" then
-                return firstValue .. secondValue
+                return tonumber(firstValue .. secondValue)
             end
             return firstValue
         end
