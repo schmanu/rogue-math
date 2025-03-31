@@ -13,7 +13,7 @@ function BalanceModule:onStartOfTurn()
     -- create a random temporary number or operator based on which you have less in your hand
     local numCards = 0
     local opCards = 0
-    for i, card in ipairs(GAME.hand) do
+    for i, card in ipairs(GAME.deck.hand) do
         if card.id:sub(1,4) == "num_" then
             numCards = numCards + 1
         elseif card.id:sub(1,3) == "op_" then
@@ -34,7 +34,7 @@ function BalanceModule:onStartOfTurn()
         local randomNum = numCards[math.random(#numCards)]
         local card = GAME:createCard(randomNum, self.x, self.y)
         card:setTemporary(true)
-        table.insert(GAME.hand, card)
+        table.insert(GAME.deck.hand, card)
     else
         -- Get all operator cards from CardLibrary
         local opCards = {}
@@ -46,7 +46,7 @@ function BalanceModule:onStartOfTurn()
         local randomOp = opCards[math.random(#opCards)]
         local card = GAME:createCard(randomOp, self.x, self.y)
         card:setTemporary(true)
-        table.insert(GAME.hand, card)
+        table.insert(GAME.deck.hand, card)
     end
     
 end

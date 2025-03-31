@@ -18,7 +18,7 @@ function PlusOneCard:play(calculator)
         -- Add a temporary 1 to the hand
         local card = GAME:createCard("num_1", self.x, self.y)
         card:setTemporary(true)
-        table.insert(GAME.hand, card)
+        table.insert(GAME.deck.hand, card)
         return true
     end
     return false

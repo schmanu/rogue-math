@@ -16,7 +16,7 @@ function StoreCard:play(calculator)
         local currentValue = calculator.currentValue
         calculator:clear()
         local loadCard = LoadCard.new("num_load", self.x, self.y, currentValue)
-        table.insert(GAME.hand, loadCard)
+        table.insert(GAME.deck.hand, loadCard)
         return true
     end
     return false

@@ -11,7 +11,7 @@ end
 
 function InfinityModule:onCardPlayed()
     -- if the hand is empty, draw 4 cards
-    if #GAME.hand == 0 then
+    if #GAME.deck.hand == 0 then
         GAME:drawNewCards(4)
     end
 end

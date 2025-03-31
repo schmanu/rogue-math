@@ -23,7 +23,7 @@ function Rewards.new()
         "op_mul",
         "op_sub",
         "op_concat",
-        "op_exp",
+        --"op_exp", this operator is too powerful. Maybe we can add it later but somehow restricted
         "op_plus1",
 
         "num_random",

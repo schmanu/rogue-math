@@ -9,6 +9,7 @@ local Assets = require("assets")
 local Shaders = require("shaders")
 local CardLibrary = require("cards/card_library")
 local Game = require("game")
+local Deck = require("deck")
 
 GAME = {
     stats = {
@@ -21,36 +22,19 @@ GAME = {
         discards = 1,
         handSize = 5,
         targetNumber = 0,
-        level = 1,
+        level = 0,
     },
     uiState = {
         hoveredElement = nil,
     },
     availableModules = {},
-    drawPile = {},
-    discardPile = {},
-    hand = {},
+    deck = Deck.new(),
     cardLibrary = CardLibrary.new(),
     calculator = nil,
     draggedElement = nil,
-    deck = {},
     font = nil,
     seed = nil,
     game = nil,  -- Will be initialized in love.load
-    drawPileUI = {
-        x = 12,  -- Keep left side position
-        y = 710,  -- Same y as hand cards
-        width = 128,
-        height = 90,
-        draw = function(self)
-            -- Draw card count
-            love.graphics.setColor(1, 1, 1)
-            local drawPileCount = self.parent.drawPile and #self.parent.drawPile or 0
-            local discardPileCount = self.parent.discardPile and #self.parent.discardPile or 0
-            local handCount = self.parent.hand and #self.parent.hand or 0
-            love.graphics.printf(drawPileCount .. "/" .. discardPileCount + drawPileCount + handCount, self.x, self.y, self.width, "center")
-        end
-    },
     endTurnButton = {
         x = 800,  -- Align with discard pile
         y = 516,  -- Move up above the cards
@@ -98,127 +82,26 @@ function GAME:createCard(cardId, x, y)
     return self.cardLibrary:createCard(cardId, x, y)
 end
 
-function GAME:initializeDeck(seed)
-    -- Create draw pile with limited number of cards
-    self.drawPile = {}
-    self.discardPile = {}
-    
-    -- Create a limited number of cards (enough for 2-3 hands)
-    for i = 1, #self.cardLibrary.initialCardIds do
-        local cardId = self.cardLibrary.initialCardIds[i]
-        table.insert(self.drawPile, self:createCard(cardId, GAME.drawPileUI.x, GAME.drawPileUI.y - 200)) -- Position will be set by updateHandPosition
-    end
-    
-    -- Shuffle draw pile
-    for i = #self.drawPile, 2, -1 do
-        local j = math.random(i)
-        self.drawPile[i], self.drawPile[j] = self.drawPile[j], self.drawPile[i]
-    end
-    
-    -- Clear and redraw hand (limited to 5 cards)
-    self.hand = {}
-    for i = 1, GAME.state.handSize do
-        if #self.drawPile > 0 then
-            local card = table.remove(self.drawPile)
-            table.insert(self.hand, card)
-        end
-    end
-    
-    -- Update hand positions
-    self:updateHandPosition()
-end
-
-function GAME:updateHandPosition()
-    local centerX = love.graphics.getWidth() / 2 - 100
-    local baseY = 500
-    local handWidth = 450
-    local maxRotation = 15  -- Maximum rotation in degrees
-    
-    -- Handle single card case
-    if #self.hand == 1 then
-        self.hand[1].x = centerX
-        self.hand[1].y = baseY
-        self.hand[1].rotation = 0
-        return
-    end
-    
-    -- Calculate hand width and spacing for multiple cards
-    local cardSpacing = handWidth / (#self.hand - 1)
-
-
-    for i, card in ipairs(self.hand) do
-        -- Calculate position along a curve
-        local t = (i - 1) / (#self.hand - 1)  -- 0 to 1
-        local curveOffset = math.sin(t * math.pi) * 20  -- Creates a slight curve
-        local x = centerX - handWidth/2 + (i-1) * cardSpacing
-        local y = baseY - curveOffset
-        
-        -- Calculate rotation (cards on edges are rotated more)
-        local rotation = (t - 0.5) * 2 * maxRotation  -- -maxRotation to maxRotation
-        
-        card.x = x
-        card.y = y
-        card.rotation = rotation
-    end
-end
-
 function GAME:drawNewCards(count)
-    -- Draw new cards from draw pile
-    for i = 1, count do
-        if #self.drawPile > 0 then
-            local card = table.remove(self.drawPile)
-            table.insert(self.hand, card)
-        end
-    end
-    
-    -- Update hand positions
-    self:updateHandPosition()
+   GAME.deck:drawCards(count)
 end
 
 function GAME:removeCard(card)
-    for i, c in ipairs(self.hand) do
-        if c == card then
-            table.remove(self.hand, i)
-            break
-        end
-    end
-    
-    -- Update hand positions
-    self:updateHandPosition()
+    GAME.deck:discardCard(card)
 end
 
 function GAME:discardSelectedCards()
-    local selectedCount = 0
-    for i = #self.hand, 1, -1 do
-        if self.hand[i]:isSelected() then
-            -- Add card to discard pile before removing from hand
-            if (not self.hand[i]:isTemporary()) then
-                table.insert(self.discardPile, self.hand[i])
-            end
-            table.remove(self.hand, i)
-            selectedCount = selectedCount + 1
-        end
-    end
+    GAME.deck:discardSelectedCards()
     
-    if selectedCount > 0 then
-        -- Reposition remaining cards
-        for i, card in ipairs(self.hand) do
-            card.x = 130 + (i-1) * 65
-        end
-        
-        -- Draw new cards
-        self:drawNewCards(selectedCount)
-        
-        -- Decrease discards
-        GAME.state.discards = GAME.state.discards - 1
-        if (GAME.state.discards == 0) then
-            GAME.discardButton.enabled = false
-        end
+    -- Decrease discards
+    GAME.state.discards = GAME.state.discards - 1
+    if (GAME.state.discards == 0) then
+        GAME.discardButton.enabled = false
     end
 end
 
 function GAME:addCardToDrawPile(cardId)
-    table.insert(self.drawPile, self:createCard(cardId, GAME.drawPileUI.x, GAME.drawPileUI.y - 200))
+    GAME.deck:addToDrawPile(GAME:createCard(cardId, GAME.deck.drawPilePosition.x, GAME.deck.drawPilePosition.y - 200))
 end
 
 function GAME:resetGame()
@@ -231,46 +114,14 @@ function GAME:prepareNextLevel()
     GAME.calculator:reset()
     GAME.game:startNextLevel()
 
+    -- Combine piles, shuffle and draw new hand
+    GAME.deck:resetDrawPile()
+    GAME.deck:shuffleDrawPile()
+    GAME.deck:drawCards(GAME.state.handSize)
     
-    -- Combine draw, discard piles and hand
-    for _, card in ipairs(GAME.discardPile) do
-        if not card:isTemporary() then
-            card:setSelected(false)
-            table.insert(GAME.drawPile, card)
-        end
-    end
-    for _, card in ipairs(GAME.hand) do
-        if not card:isTemporary() then
-            card:setSelected(false)
-            table.insert(GAME.drawPile, card)
-        end
-    end
-    GAME.discardPile = {}  -- Clear discard pile
-    
-    -- Reshuffle combined draw pile for new level
-    for i = #GAME.drawPile, 2, -1 do
-        local j = math.random(i)
-        GAME.drawPile[i], GAME.drawPile[j] = GAME.drawPile[j], GAME.drawPile[i]
-    end
-
-
-    
-    -- Draw new hand
-    GAME.hand = {}
-
-    for i = 1, GAME.state.handSize do
-        if #GAME.drawPile > 0 then
-            local card = table.remove(GAME.drawPile)
-            -- unselect card
-            table.insert(GAME.hand, card)
-        end
-    end
-
     -- Apply modules that trigger on round start
     if GAME.calculator.modules.slot1 then GAME.calculator.modules.slot1:onStartOfTurn() end
     if GAME.calculator.modules.slot2 then GAME.calculator.modules.slot2:onStartOfTurn() end
-
-    GAME:updateHandPosition()
 
     -- Enable discard button
     GAME.discardButton.enabled = true
@@ -288,18 +139,15 @@ function love.load()
     -- Initialize game state
     GAME.game = Game.new()
     GAME.game.cardLibrary = GAME.cardLibrary  -- Pass card library reference
+
+    -- Initialize deck
+    GAME.deck:reset()
     
     -- Initialize calculator
     GAME.calculator = Calculator.new(392, 64, GAME.game)
     
-    -- Set parent references for UI elements
-    GAME.drawPileUI.parent = GAME
-    
     GAME.game:initializeLevel()
-
-    -- Initialize deck and hand
-    GAME:initializeDeck()
-
+    GAME:prepareNextLevel()
     
     -- Load assets
     Assets.load()
@@ -310,17 +158,6 @@ function love.update(dt)
 
     -- Get mouse position
     local mx, my = love.mouse.getPosition()
-
-    -- combine all possible shown cards: hand and reward cards
-    local allCards = {}
-    for _, card in ipairs(GAME.hand) do
-        table.insert(allCards, card)
-    end
-    if (GAME.game.rewards.rewardState.active) then
-        for _, card in ipairs(GAME.game.rewards.rewardState.cards) do
-            table.insert(allCards, card)
-        end
-    end
 
     -- combine all possible shown modules: modules in tabs and modules in calculator
     local allModules = {}
@@ -341,15 +178,13 @@ function love.update(dt)
         end
     end
 
-    -- Update all cards (hand and rewards) in reverse order
-    for _, card in ipairs(allCards) do
-        card:update(dt)
-    end
-
     -- Update all modules (tabs and calculator)
     for _, module in ipairs(allModules) do
         module:update(dt)
     end
+
+    -- Update deck and cards
+    GAME.deck:update(dt)
     
     -- Update calculator
     GAME.calculator:update(dt)
@@ -365,7 +200,7 @@ function love.update(dt)
     GAME.discardButton:updateHoverState(mx, my)
     
     -- Update card disabled state based on calculator state
-    for _, card in ipairs(GAME.hand) do
+    for _, card in ipairs(GAME.deck.hand) do
         if GAME.state.gameState == "playing" then
             -- Disable cards based on expected input type
             if GAME.calculator:getExpectedInputType() == "number" then
@@ -402,14 +237,8 @@ function love.draw()
     -- Draw calculator
     GAME.calculator:draw()
     
-    -- Draw draw pile UI
-    GAME.drawPileUI:draw()
-    
-    -- Draw hand cards
-    for _, card in ipairs(GAME.hand) do
-        card:draw()
-    end
-    
+    -- Draw deck and cards
+    GAME.deck:draw()
     
     -- Draw end turn button
     if GAME.endTurnButton.hovered then
@@ -445,13 +274,7 @@ function love.draw()
 end
 
 function love.mousepressed(x, y, button)
-    if button == 1 then  -- Left click
-        -- Check if clicking end turn button
-        if GAME.endTurnButton:containsPoint(x, y) then
-            GAME.game:onTurnEnd()
-            return
-        end
-        
+    if button == 1 then  -- Left click 
         -- Check if clicking discard button
         if GAME.state.discards > 0 and GAME.discardButton:containsPoint(x, y) then
             GAME:discardSelectedCards()
@@ -487,8 +310,8 @@ function love.mousepressed(x, y, button)
         end
         
         -- Check if clicking on a card in hand
-        for i = #GAME.hand, 1, -1 do
-            local card = GAME.hand[i]
+        for i = #GAME.deck.hand, 1, -1 do
+            local card = GAME.deck.hand[i]
             if card:containsPoint(x, y) then
                 if not card:isDisabled() then
                     card:startDragging()
@@ -497,6 +320,12 @@ function love.mousepressed(x, y, button)
                 card:setSelected(not card:isSelected())
                 break
             end
+        end
+
+        -- Check if clicking end turn button
+        if GAME.endTurnButton:containsPoint(x, y) then
+            GAME.game:onTurnEnd()
+            return
         end
     end
 end
@@ -510,18 +339,16 @@ function love.mousereleased(x, y, button)
                 if GAME.draggedElement:play(GAME.calculator, GAME) then
                     -- Record that a card was played
                     GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
-                    -- Add card to discard pile before removing from hand
-                    if (not GAME.draggedElement:isTemporary()) then
-                        table.insert(GAME.discardPile, GAME.draggedElement)
-                    end
-                    -- Remove card from hand
+
+                    -- Remove card from hand and discard it
                     GAME:removeCard(GAME.draggedElement)
+
                     -- trigger onCardPlayed on calculator
                     print("onCardPlayed " .. GAME.draggedElement.id)
                     GAME.calculator:onCardPlayed(GAME.draggedElement)
                     
-                    GAME.draggedElement.drawX = GAME.drawPileUI.x
-                    GAME.draggedElement.drawY = GAME.drawPileUI.y - 200
+                    GAME.draggedElement.drawX = GAME.deck.drawPilePosition.x
+                    GAME.draggedElement.drawY = GAME.deck.drawPilePosition.y - 200
                 end
             elseif GAME.draggedElement.objectName == "Module" then
                 -- add to calculator
@@ -532,7 +359,7 @@ function love.mousereleased(x, y, button)
         else
             -- Return card to hand
             local index = 1
-            for i, card in ipairs(GAME.hand) do
+            for i, card in ipairs(GAME.deck.hand) do
                 if card == GAME.draggedElement then
                     index = i
                     break
@@ -543,8 +370,6 @@ function love.mousereleased(x, y, button)
         end
         GAME.draggedElement:stopDragging()
         GAME.draggedElement = nil
-        -- Update hand positions
-       GAME:updateHandPosition()
     end
 end
 
@@ -552,13 +377,7 @@ function love.keypressed(key)
     if key == "escape" then
         love.event.quit()
     elseif key == "r" then
-        -- Reset the game with a new random seed
-        GAME:initializeDeck()
-        GAME.calculator:reset()
-    elseif key == "s" then
-        -- Reset the game with the same seed (for testing)
-        GAME:initializeDeck(GAME.seed)
-        GAME.calculator:reset()
+        GAME:resetGame()
     end
 end
 

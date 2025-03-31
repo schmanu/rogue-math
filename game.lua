@@ -49,15 +49,14 @@ function Game:initializeLevel()
 end
 
 function Game:calculateTargetNumber()
-    -- Always use Fibonacci sequence for target
-    local fib = 5
-    local prev = 3
-    for i = 1, GAME.state.level do
-        local temp = fib
-        fib = fib + prev
-        prev = temp
-    end
-    return fib
+    local week = math.floor((GAME.state.level - 1) / 5) + 1
+    local baseNumber = 10 ^ ((1 + week) / 2)
+
+    local dayFactor = 1.25
+
+    -- day 1: 1.25, day 2: 1.5625, day 3: 1.953125, day 4: 2.44140625, day 5: 3.0517578125
+    print("Calculating target number for level " .. GAME.state.level .. " with base number " .. baseNumber .. " and day factor " .. ((dayFactor ^ ((GAME.state.level - 1) % 5 + 1))))
+    return math.ceil(baseNumber * ((dayFactor ^ ((GAME.state.level - 1) % 5 + 1))))
 end
 
 function Game:calculateGradeDiff(argResult)
@@ -123,6 +122,11 @@ function Game:onTurnEnd()
     -- apply health diff
     local health_diff = self:calculateGradeDiff()
     self.grade:updateGrade(health_diff)
+
+    -- apply potential modifiers
+    self:evaluateResult(GAME.calculator:getResult())
+
+
     
     if self.grade.grade > 1 then
         -- Level complete
@@ -191,7 +195,7 @@ function Game:update(dt)
 end
 
 function Game:reset()
-    GAME.state.level = 1
+    GAME.state.level = 0
     self.targetNumber = 0
     self.rewardState.active = false
     self.rewardState.cards = {}
