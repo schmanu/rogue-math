@@ -14,7 +14,7 @@ function DecreasedHand:onDayStart()
     GAME.state.handSize = GAME.state.handSize - 1
 end
 
-function DecreasedHand:evaluate(game, result)
+function DecreasedHand:evaluate(result)
     -- No evaluation neede
 end
 

@@ -15,7 +15,7 @@ function NoDiscards:onDayStart()
     GAME.state.targetNumber = math.floor(GAME.state.targetNumber / 4)
 end
 
-function NoDiscards:evaluate(game, result)
+function NoDiscards:evaluate(result)
     -- No evaluation needed
 end
 

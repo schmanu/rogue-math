@@ -14,7 +14,7 @@ function HitTheNumber:onDayStart()
     -- No need to set a flag, the instance will be stored in game.modifiers
 end
 
-function HitTheNumber:evaluate(game, result)
+function HitTheNumber:evaluate(result)
     -- this must be handles specifically in the game.lua
 end
 

@@ -12,7 +12,7 @@ function Modifier:onDayStart()
     -- Override in subclasses
 end
 
-function Modifier:evaluate(game, result)
+function Modifier:evaluate(result)
     -- Override in subclasses
 end
 

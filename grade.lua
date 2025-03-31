@@ -86,6 +86,7 @@ function Grade:update(dt)
 end
 
 function Grade:updateGrade(difference)
+    print("Updating grade by " .. difference)
     self.grade = self.grade + difference
     if self.grade < 1 then
         self.grade = 1

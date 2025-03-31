@@ -14,9 +14,9 @@ end
 function DividableBy:onDayStart()
 end
 
-function DividableBy:evaluate(game, result)
+function DividableBy:evaluate(result)
     if result % self.value ~= 0 then
-        game.grade:decreaseGrade(3)
+        GAME.game.grade:updateGrade(-3)
     end
 end
 

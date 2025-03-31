@@ -141,7 +141,7 @@ end
 function Game:evaluateResult(result)
     -- Apply all active modifiers
     for _, modifier in pairs(self.modifiers) do
-        modifier:evaluate(self, result)
+        modifier:evaluate(result)
     end
 end
 

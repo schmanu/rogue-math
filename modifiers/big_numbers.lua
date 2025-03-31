@@ -15,7 +15,7 @@ function BigNumbers:onDayStart()
 
 end
 
-function BigNumbers:evaluate(game, result)
+function BigNumbers:evaluate(result)
     -- No evaluation needed
 end
 
