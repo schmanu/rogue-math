@@ -120,6 +120,11 @@ function GAME:prepareNextLevel()
     GAME.deck:resetDrawPile()
     GAME.deck:shuffleDrawPile()
     GAME.deck:drawCards(GAME.state.handSize)
+
+    -- apply modifiers  
+    for _, modifier in pairs(GAME.game.modifiers) do
+        modifier:onDayStart()
+    end
     
     -- Apply modules that trigger on round start
     if GAME.calculator.modules.slot1 then GAME.calculator.modules.slot1:onStartOfTurn() end
@@ -235,7 +240,7 @@ function love.draw()
     if Assets.backgroundSprite then
         love.graphics.draw(Assets.backgroundSprite, 0, 0)
     end
-    
+
     -- Draw calculator
     GAME.calculator:draw()
     

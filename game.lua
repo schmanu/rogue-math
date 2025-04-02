@@ -23,11 +23,13 @@ function Game:initializeLevel()
     if GAME.state.level % 5 == 0 then
         -- Select a random modifier
         local modifierKeys = {
-            --"HitTheNumber", Disable for now as its not working
+            "HitTheNumber",
             "DividableBy",
             "NoDiscards",
             "DecreasedHand",
-            "BigNumbers"
+            "BigNumbers",
+            "Wasteful",
+            "SignedNumbers"
         }
         local randomModifier = modifierKeys[math.random(#modifierKeys)]
         local modifier = Modifiers[randomModifier].new()
@@ -41,11 +43,6 @@ function Game:initializeLevel()
     
     GAME.state.gameState = "playing"
     self.grade:nextRound()
-
-    -- apply modifiers  
-    for _, modifier in pairs(self.modifiers) do
-        modifier:onDayStart()
-    end
 end
 
 function Game:calculateTargetNumber()

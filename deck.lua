@@ -34,6 +34,10 @@ function Deck:reset()
     self:drawCards(GAME.state.handSize)
 end
 
+function Deck:getCardCount()
+    return #self.drawPile + #self.discardPile + #self.hand
+end
+
 function Deck:addToDrawPile(card)
     table.insert(self.drawPile, card)
 end
@@ -46,6 +50,19 @@ function Deck:drawCards(numCards)
         end
     end
 end
+
+function Deck:discardCards(numCards)
+    print("Draw pile before discarding: " .. #self.drawPile)
+    for i = 1, numCards do
+        if #self.drawPile > 0 then
+            local nextCard = table.remove(self.drawPile)
+            print("Discarding card " .. nextCard.id)
+            table.insert(self.discardPile, nextCard)
+        end
+    end
+    print("Draw pile before discarding: " .. #self.drawPile)
+
+end    
 
 function Deck:discardCard(card)
     -- only temporary cards get discarded
