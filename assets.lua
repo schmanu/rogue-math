@@ -113,6 +113,7 @@ function Assets.load()
     Assets.moduleSprites["module_count"] = love.graphics.newImage("sprites/modules/module_count.png")
     Assets.moduleSprites["module_balance"] = love.graphics.newImage("sprites/modules/module_balance.png")
     Assets.moduleSprites["module_less_more"] = love.graphics.newImage("sprites/modules/module_less_more.png")
+    Assets.moduleSprites["module_tutoring"] = love.graphics.newImage("sprites/modules/module_tutoring.png")
     return true
 end
 

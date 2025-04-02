@@ -50,6 +50,7 @@ function Rewards.new()
         "count",
         "balance",
         "less_more",
+        "tutoring",
     }
 
     return self
