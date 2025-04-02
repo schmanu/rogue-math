@@ -41,7 +41,7 @@ function Game:initializeLevel()
     -- Calculate target number
     GAME.state.targetNumber = self:calculateTargetNumber()
     
-    GAME.state.gameState = "playing"
+    GAME.state.gameState = "playing" -- playing, levelComplete, gameOver
     self.grade:nextRound()
 end
 

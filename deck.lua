@@ -5,7 +5,7 @@ Deck.__index = Deck
 
 function Deck.new()
     local self = setmetatable({}, Deck)
-
+    self.autoPlayStack = {}
     self.drawPile = {}
     self.discardPile = {}
     self.hand = {}
@@ -16,6 +16,8 @@ function Deck.new()
         height = 90,
     }
     self.cardLibrary = CardLibrary.new()
+    self.lastCardPlayedTime = 0
+    self.autoPlaySpeed = 0.5 -- every .5 seconds a crad is played from the stack
     return self
 end
 
@@ -61,7 +63,6 @@ function Deck:discardCards(numCards)
         end
     end
     print("Draw pile before discarding: " .. #self.drawPile)
-
 end    
 
 function Deck:discardCard(card)
@@ -74,6 +75,14 @@ function Deck:discardCard(card)
     for i, handCard in ipairs(self.hand) do
         if handCard == card then
             table.remove(self.hand, i)
+            break
+        end
+    end
+
+    -- remove card from draw pile
+    for i, drawPileCard in ipairs(self.drawPile) do
+        if drawPileCard == card then
+            table.remove(self.drawPile, i)
             break
         end
     end
@@ -183,6 +192,24 @@ function Deck:update(dt)
     for _, card in ipairs(allCards) do
         card:update(dt)
     end
+
+    -- if lastCardPlayedTime + autoPlaySpeed is less than current time, play a card from the auto play stack
+    if self.lastCardPlayedTime + self.autoPlaySpeed < love.timer.getTime() then
+        if #self.autoPlayStack > 0 then
+            print("Playing card from auto play stack" .. self.autoPlayStack[1].id)
+            self.autoPlayStack[1]:setDisabled(false)
+            GAME:playCard(table.remove(self.autoPlayStack, 1))
+            self.lastCardPlayedTime = love.timer.getTime()
+        end
+    end
+
+    -- Display the top card of the auto play stack in the middle of ther screen
+    if #self.autoPlayStack > 0 then
+        self.autoPlayStack[1].x = love.graphics.getWidth() / 2 - 128
+        self.autoPlayStack[1].y = love.graphics.getHeight() / 2 - 100
+        self.autoPlayStack[1].rotation = 0
+        self.autoPlayStack[1]:update(dt)
+    end
     
 end
 
@@ -197,6 +224,11 @@ function Deck:draw()
     -- Hand cards
     for i, card in ipairs(self.hand) do
         card:draw()
+    end
+
+    -- Auto play stack
+    if #self.autoPlayStack > 0 then
+        self.autoPlayStack[1]:draw()
     end
 end
 

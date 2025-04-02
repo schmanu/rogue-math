@@ -23,7 +23,7 @@ function Tabs.new(x, y)
         isAnimating = false
     }
 
-    self.modules = {}
+    self.modules = { self.moduleLibrary:createModule(self.moduleLibrary.moduleIds.chaos, 0, 0) }
     return self
 end
 

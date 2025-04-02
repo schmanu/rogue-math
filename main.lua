@@ -337,28 +337,30 @@ function love.mousepressed(x, y, button)
     end
 end
 
+function GAME:playCard(card)
+    if (card:play(GAME.calculator, GAME)) then
+        -- Record that a card was played
+        GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
+        table.insert(GAME.stats.round.lastCardsPlayed, card)
+
+        -- Remove card from hand and discard it
+        GAME:removeCard(card)
+
+        -- trigger onCardPlayed on calculator
+        print("onCardPlayed " .. card.id)
+        GAME.calculator:onCardPlayed(card)
+
+        card.drawX = GAME.deck.drawPilePosition.x
+        card.drawY = GAME.deck.drawPilePosition.y - 200
+    end
+end
+
 function love.mousereleased(x, y, button)
     if button == 1 and GAME.draggedElement then
         -- Check if dropped on calculator
         if GAME.calculator:containsPoint(x, y) then
             if GAME.draggedElement.objectName == "Card" then
-            -- Play the card
-                if GAME.draggedElement:play(GAME.calculator, GAME) then
-
-                    -- Record that a card was played
-                    GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
-                    table.insert(GAME.stats.round.lastCardsPlayed, GAME.draggedElement)
-
-                    -- Remove card from hand and discard it
-                    GAME:removeCard(GAME.draggedElement)
-
-                    -- trigger onCardPlayed on calculator
-                    print("onCardPlayed " .. GAME.draggedElement.id)
-                    GAME.calculator:onCardPlayed(GAME.draggedElement)
-                    
-                    GAME.draggedElement.drawX = GAME.deck.drawPilePosition.x
-                    GAME.draggedElement.drawY = GAME.deck.drawPilePosition.y - 200
-                end
+                GAME:playCard(GAME.draggedElement)
             elseif GAME.draggedElement.objectName == "Module" then
                 -- add to calculator
                 GAME.calculator:installModule(GAME.draggedElement, x, y)

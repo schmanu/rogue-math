@@ -3,6 +3,7 @@ local CountModule = require("modules/module_count")
 local BalanceModule = require("modules/module_balance")
 local LessIsMoreModule = require("modules/module_less_more")
 local TutoringModule = require("modules/module_tutoring")
+local ChaosModule = require("modules/module_chaos")
 
 local ModuleLibrary = {}
 ModuleLibrary.__index = ModuleLibrary
@@ -15,6 +16,7 @@ function ModuleLibrary.new()
         balance = "balance",
         less_more = "less_more",
         tutoring = "tutoring",
+        chaos = "chaos",
     }
 
     return self
@@ -31,6 +33,8 @@ function ModuleLibrary:createModule(moduleId, x, y)
         return LessIsMoreModule.new(moduleId, x, y)
     elseif moduleId == self.moduleIds.tutoring then
         return TutoringModule.new(moduleId, x, y)
+    elseif moduleId == self.moduleIds.chaos then
+        return ChaosModule.new(moduleId, x, y)
     end
 end
 
