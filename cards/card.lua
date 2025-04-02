@@ -263,7 +263,15 @@ function Card:draw()
             Shaders.cardShader:send("modifierColor", {1, 1, 1, 1})
         end
 
+        Shaders.cardShader:send("dragging", self.dragging)
+        Shaders.cardShader:send("time", love.timer.getTime())
+
         Shaders.cardShader:send("borderColor", borderColor)
+        if self.hovered then
+            Shaders.cardShader:send("mousePos", {love.mouse.getX(), love.mouse.getY()})
+        else
+            Shaders.cardShader:send("mousePos", {0, 0})
+        end
         -- Draw sprite scaled up by 2
         love.graphics.draw(sprite, self.drawX, self.drawY, 0, scale, scale)
         
@@ -277,10 +285,17 @@ function Card:draw()
             local padding = 16
             local tooltipWidth = love.graphics.getFont():getWidth(self.tooltip) + padding * 2
             local tooltipHeight = love.graphics.getFont():getHeight() * 5 + padding
-            
+
+            local scale = 1
             -- Get screen dimensions
             local screenWidth = love.graphics.getWidth()
             local screenHeight = love.graphics.getHeight()
+
+            if tooltipWidth > screenWidth then
+                scale = screenWidth / tooltipWidth
+                tooltipHeight = tooltipHeight * scale
+                tooltipWidth = screenWidth
+            end
             
             -- Calculate tooltip position centered under module
             local tooltipX = self.drawX + (self.width/2) - (tooltipWidth/2)
@@ -300,11 +315,11 @@ function Card:draw()
             
             love.graphics.rectangle("fill", tooltipX, tooltipY, tooltipWidth, tooltipHeight)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(self.tooltip, tooltipX + padding, tooltipY + padding/2)
+            love.graphics.print(self.tooltip, tooltipX + padding, tooltipY + padding/2, 0, scale)
             if self.temporary then
                 local labelWidth = love.graphics.getFont():getWidth("Temporary")
                 love.graphics.setColor(0.16, 0.67, 1)
-                love.graphics.print("Temporary", tooltipX + tooltipWidth - (labelWidth + padding), tooltipY + padding/2)
+                love.graphics.print("Temporary", tooltipX + tooltipWidth - (labelWidth + padding), tooltipY + padding/2, 0, scale)
                 love.graphics.setColor(1,1,1)
             end
 

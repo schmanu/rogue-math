@@ -49,13 +49,12 @@ function Game:initializeLevel()
 end
 
 function Game:calculateTargetNumber()
+    local weekFactor = 2
     local week = math.floor((GAME.state.level - 1) / 5) + 1
-    local baseNumber = 10 ^ ((1 + week) / 2)
+    local baseNumber = (10 ^ ((1 + week) / 2)) * weekFactor ^ (week - 1)
 
-    local dayFactor = 1.25
+    local dayFactor = 1.3
 
-    -- day 1: 1.25, day 2: 1.5625, day 3: 1.953125, day 4: 2.44140625, day 5: 3.0517578125
-    print("Calculating target number for level " .. GAME.state.level .. " with base number " .. baseNumber .. " and day factor " .. ((dayFactor ^ ((GAME.state.level - 1) % 5 + 1))))
     return math.ceil(baseNumber * ((dayFactor ^ ((GAME.state.level - 1) % 5 + 1))))
 end
 

@@ -34,9 +34,12 @@ function Rewards.new()
         "mod_prime",
         "mod_double",
         "mod_reverse",
-        "mod_inverse",
+        "mod_inverse",  
         "mod_store",
-        
+        "mod_square",
+        "mod_hex",
+        "mod_perfect",
+
         "sp_draw3",
 
 
@@ -46,6 +49,7 @@ function Rewards.new()
         "infinity",
         "count",
         "balance",
+        "less_more",
     }
 
     return self

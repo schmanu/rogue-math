@@ -15,6 +15,7 @@ GAME = {
     stats = {
         round = {
             cardsPlayed = 0,
+            lastCardsPlayed = {},
         },
     },
     state = {
@@ -111,6 +112,7 @@ end
 
 function GAME:prepareNextLevel()
     GAME.stats.round.cardsPlayed = 0
+    GAME.stats.round.lastCardsPlayed = {}
     GAME.calculator:reset()
     GAME.game:startNextLevel()
 
@@ -337,8 +339,10 @@ function love.mousereleased(x, y, button)
             if GAME.draggedElement.objectName == "Card" then
             -- Play the card
                 if GAME.draggedElement:play(GAME.calculator, GAME) then
+
                     -- Record that a card was played
                     GAME.stats.round.cardsPlayed = GAME.stats.round.cardsPlayed + 1
+                    table.insert(GAME.stats.round.lastCardsPlayed, GAME.draggedElement)
 
                     -- Remove card from hand and discard it
                     GAME:removeCard(GAME.draggedElement)

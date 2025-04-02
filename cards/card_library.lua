@@ -9,7 +9,9 @@ local InverseCard = require("cards/inverse_card")
 local PowerOf2Card = require("cards/pow2_card")
 local PlusOneCard = require("cards/operator_plus1")
 local StoreCard = require("cards/store_card")
-
+local SquareCard = require("cards/square_card")
+local HexCard = require("cards/hex_card")
+local PerfectCard = require("cards/perfect_card")
 local CardLibrary = {}
 CardLibrary.__index = CardLibrary
 
@@ -31,6 +33,7 @@ function CardLibrary.new()
         num_random = "num_random",
         num_pow2 = "num_pow2",
         num_load = "num_load",
+
         op_add = "op_add",
         op_sub = "op_sub",
         op_mul = "op_mul",
@@ -38,11 +41,16 @@ function CardLibrary.new()
         op_exp = "op_exp",
         op_concat = "op_concat",
         op_plus1 = "op_plus1",
+
         mod_reverse = "mod_reverse",
         mod_double = "mod_double",
         mod_prime = "mod_prime",
         mod_inverse = "mod_inverse",
         mod_store = "mod_store",
+        mod_square = "mod_square",
+        mod_hex = "mod_hex",
+        mod_perfect = "mod_perfect",
+
         sp_draw3 = "sp_draw3",
     }
     self.initialCardIds = {
@@ -121,8 +129,12 @@ function CardLibrary:createCard(cardId, x, y)
         return InverseCard.new(cardId, x, y)
     elseif cardId == self.cardIds.mod_store then
         return StoreCard.new(cardId, x, y)
-
-
+    elseif cardId == self.cardIds.mod_square then
+        return SquareCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.mod_hex then
+        return HexCard.new(cardId, x, y)
+    elseif cardId == self.cardIds.mod_perfect then
+        return PerfectCard.new(cardId, x, y)
     -- special cards
     elseif cardId == self.cardIds.sp_draw3 then
         return Draw3Card.new(cardId, x, y)

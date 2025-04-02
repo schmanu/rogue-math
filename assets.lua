@@ -100,6 +100,9 @@ function Assets.load()
     Assets.cardSprites["mod_prime"] = love.graphics.newImage("sprites/cards/mod_pN.png")
     Assets.cardSprites["mod_inverse"] = love.graphics.newImage("sprites/cards/mod_inverse.png")
     Assets.cardSprites["mod_store"] = love.graphics.newImage("sprites/cards/mod_store.png")
+    Assets.cardSprites["mod_square"] = love.graphics.newImage("sprites/cards/mod_square.png")
+    Assets.cardSprites["mod_hex"] = love.graphics.newImage("sprites/cards/mod_hex.png")
+    Assets.cardSprites["mod_perfect"] = love.graphics.newImage("sprites/cards/mod_perfect.png")
 
     -- Special cards
     Assets.cardSprites["sp_draw3"] = love.graphics.newImage("sprites/cards/sp_draw3.png")
@@ -109,6 +112,7 @@ function Assets.load()
     Assets.moduleSprites["module_infinity"] = love.graphics.newImage("sprites/modules/module_infinity.png")
     Assets.moduleSprites["module_count"] = love.graphics.newImage("sprites/modules/module_count.png")
     Assets.moduleSprites["module_balance"] = love.graphics.newImage("sprites/modules/module_balance.png")
+    Assets.moduleSprites["module_less_more"] = love.graphics.newImage("sprites/modules/module_less_more.png")
     return true
 end
 
